@@ -10,21 +10,29 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <title>Финансы</title>
-  <link rel="stylesheet" href="styles.css?v=2">
+  <link rel="stylesheet" href="styles.css?v=3">
 </head>
 <body>
 <div id="app">
 
-  <!-- ── Главная ── -->
+  <!-- ══ Главная ══ -->
   <div id="screen-home" class="screen active">
     <div class="header">
       <div class="header-row">
         <h1>Финансы</h1>
+        <button class="theme-btn" id="theme-btn" title="Сменить тему">🎨</button>
       </div>
     </div>
 
     <div class="balance-card">
-      <div class="balance-label">Баланс за месяц</div>
+      <div class="balance-card-top">
+        <div class="balance-label">Баланс за месяц</div>
+        <div class="month-nav">
+          <button class="month-nav-btn" id="btn-prev-month">‹</button>
+          <span class="month-nav-label" id="month-label">Май 2026</span>
+          <button class="month-nav-btn" id="btn-next-month" style="opacity:0.3;pointer-events:none">›</button>
+        </div>
+      </div>
       <div class="balance-amount" id="balance-total">0 ₽</div>
       <div class="balance-row">
         <div class="balance-pill">
@@ -51,11 +59,9 @@
     <div class="tx-list" id="home-tx-list"></div>
   </div>
 
-  <!-- ── Добавление ── -->
+  <!-- ══ Добавление ══ -->
   <div id="screen-add" class="screen">
-    <div class="add-header">
-      <h2>Новая запись</h2>
-    </div>
+    <div class="add-header"><h2>Новая запись</h2></div>
 
     <div class="type-toggle">
       <button class="type-btn active expense" data-type="expense">Расход</button>
@@ -64,35 +70,26 @@
 
     <div class="amount-display">
       <div class="amount-display-label">Сумма, ₽</div>
-      <input
-        id="amount-input"
-        class="amount-input"
-        type="number"
-        inputmode="decimal"
-        placeholder="0"
-        min="0"
-        step="any"
-      >
+      <input id="amount-input" class="amount-input" type="number"
+        inputmode="decimal" placeholder="0" min="0" step="any">
     </div>
 
-    <div class="field-wrap">
-      <div class="field-label">Категория</div>
-      <div class="categories-grid" id="categories-grid"></div>
+    <div class="add-scroll">
+      <div class="field-wrap">
+        <div class="field-label">Категория</div>
+        <div class="categories-grid" id="categories-grid"></div>
+      </div>
+      <div class="field-wrap">
+        <div class="field-label">Комментарий</div>
+        <input id="note-input" class="note-input" type="text" placeholder="Необязательно">
+      </div>
+      <button class="save-btn" id="save-btn">Сохранить</button>
     </div>
-
-    <div class="field-wrap">
-      <div class="field-label">Комментарий</div>
-      <input id="note-input" class="note-input" type="text" placeholder="Необязательно">
-    </div>
-
-    <button class="save-btn" id="save-btn">Сохранить</button>
   </div>
 
-  <!-- ── История ── -->
+  <!-- ══ История ══ -->
   <div id="screen-history" class="screen">
-    <div class="header">
-      <h1>История</h1>
-    </div>
+    <div class="header"><h1>История</h1></div>
     <div class="history-filters">
       <button class="filter-btn active" data-filter="all">Все</button>
       <button class="filter-btn" data-filter="expense">Расходы</button>
@@ -101,11 +98,9 @@
     <div class="tx-list" id="history-tx-list"></div>
   </div>
 
-  <!-- ── Статистика ── -->
+  <!-- ══ Статистика ══ -->
   <div id="screen-stats" class="screen">
-    <div class="header">
-      <h1>Статистика</h1>
-    </div>
+    <div class="header"><h1>Статистика</h1></div>
     <div class="stats-scroll">
 
       <div class="period-toggle">
@@ -117,26 +112,24 @@
       <div class="stats-card">
         <h3>Сводка</h3>
         <div class="stat-pills">
-          <div class="stat-pill" style="background:rgba(74,222,128,0.07);border:1px solid rgba(74,222,128,0.12)">
+          <div class="stat-pill" style="background:rgba(48,215,128,0.07);border:1px solid rgba(48,215,128,0.12)">
             <span class="stat-pill-label">Доходы</span>
-            <span class="stat-pill-value" id="stat-income" style="color:#4ade80">0 ₽</span>
+            <span class="stat-pill-value" id="stat-income" style="color:var(--green)">0 ₽</span>
           </div>
-          <div class="stat-pill" style="background:rgba(251,113,133,0.07);border:1px solid rgba(251,113,133,0.12)">
+          <div class="stat-pill" style="background:rgba(255,77,106,0.07);border:1px solid rgba(255,77,106,0.12)">
             <span class="stat-pill-label">Расходы</span>
-            <span class="stat-pill-value" id="stat-expense" style="color:#fb7185">0 ₽</span>
+            <span class="stat-pill-value" id="stat-expense" style="color:var(--red)">0 ₽</span>
           </div>
           <div class="stat-pill" style="background:rgba(91,141,239,0.07);border:1px solid rgba(91,141,239,0.12)">
             <span class="stat-pill-label">Итог</span>
-            <span class="stat-pill-value" id="stat-balance" style="color:#5b8def">0 ₽</span>
+            <span class="stat-pill-value" id="stat-balance" style="color:var(--blue)">0 ₽</span>
           </div>
         </div>
       </div>
 
       <div class="stats-card">
         <h3>По дням</h3>
-        <div class="chart-wrap">
-          <canvas id="chart"></canvas>
-        </div>
+        <div class="chart-wrap"><canvas id="chart"></canvas></div>
       </div>
 
       <div class="stats-card">
@@ -147,7 +140,7 @@
     </div>
   </div>
 
-  <!-- ── Навигация ── -->
+  <!-- ══ Навигация ══ -->
   <nav class="nav">
     <button class="nav-btn active" data-screen="home">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
@@ -183,10 +176,21 @@
     </button>
   </nav>
 
+  <!-- ══ Шторка выбора темы ══ -->
+  <div id="sheet-overlay" class="sheet-overlay"></div>
+  <div id="theme-sheet" class="theme-sheet">
+    <div class="sheet-handle"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div class="sheet-title">Оформление</div>
+      <button id="sheet-close" style="background:none;border:none;color:var(--text2);font-size:22px;cursor:pointer;line-height:1">×</button>
+    </div>
+    <div class="theme-cards" id="theme-cards"></div>
+  </div>
+
   <div id="toast" class="toast"></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="app.js?v=2"></script>
+<script src="app.js?v=3"></script>
 </body>
 </html>

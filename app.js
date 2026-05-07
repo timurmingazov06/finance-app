@@ -1,106 +1,228 @@
 'use strict';
 
-// ── Данные ──────────────────────────────────────────────────────────────────
-
 const CATEGORIES = [
-  { id: 'food',      emoji: '🍕', name: 'Еда' },
-  { id: 'transport', emoji: '🚗', name: 'Транспорт' },
-  { id: 'shop',      emoji: '🛍️', name: 'Покупки' },
-  { id: 'health',    emoji: '💊', name: 'Здоровье' },
-  { id: 'home',      emoji: '🏠', name: 'Дом' },
-  { id: 'fun',       emoji: '🎮', name: 'Развлечения' },
-  { id: 'sport',     emoji: '💪', name: 'Спорт' },
-  { id: 'cafe',      emoji: '☕', name: 'Кафе' },
-  { id: 'travel',    emoji: '✈️', name: 'Путешествия' },
-  { id: 'beauty',    emoji: '💄', name: 'Красота' },
-  { id: 'edu',       emoji: '📚', name: 'Учёба' },
-  { id: 'other',     emoji: '💸', name: 'Другое' },
-  { id: 'salary',    emoji: '💰', name: 'Зарплата' },
-  { id: 'gift',      emoji: '🎁', name: 'Подарок' },
-  { id: 'freelance', emoji: '💻', name: 'Фриланс' },
-  { id: 'invest',    emoji: '📈', name: 'Инвестиции' },
+  { id:'food',      emoji:'🍕', name:'Еда' },
+  { id:'transport', emoji:'🚗', name:'Транспорт' },
+  { id:'shop',      emoji:'🛍️', name:'Покупки' },
+  { id:'health',    emoji:'💊', name:'Здоровье' },
+  { id:'home',      emoji:'🏠', name:'Дом' },
+  { id:'fun',       emoji:'🎮', name:'Развлечения' },
+  { id:'sport',     emoji:'💪', name:'Спорт' },
+  { id:'cafe',      emoji:'☕', name:'Кафе' },
+  { id:'travel',    emoji:'✈️', name:'Путешествия' },
+  { id:'beauty',    emoji:'💄', name:'Красота' },
+  { id:'edu',       emoji:'📚', name:'Учёба' },
+  { id:'other',     emoji:'💸', name:'Другое' },
+  { id:'salary',    emoji:'💰', name:'Зарплата' },
+  { id:'gift',      emoji:'🎁', name:'Подарок' },
+  { id:'freelance', emoji:'💻', name:'Фриланс' },
+  { id:'invest',    emoji:'📈', name:'Инвестиции' },
 ];
-
 const CAT_MAP = Object.fromEntries(CATEGORIES.map(c => [c.id, c]));
 
-function loadTx() {
-  try { return JSON.parse(localStorage.getItem('finance_tx') || '[]'); }
-  catch { return []; }
-}
-function saveTx(list) {
-  localStorage.setItem('finance_tx', JSON.stringify(list));
-}
+// ── Storage ──────────────────────────────────────────────────────────────────
+function loadTx()   { try { return JSON.parse(localStorage.getItem('finance_tx') || '[]'); } catch { return []; } }
+function saveTx(l)  { localStorage.setItem('finance_tx', JSON.stringify(l)); }
+function loadTheme(){ return localStorage.getItem('finance_theme') || 'dark'; }
+function saveTheme(t){ localStorage.setItem('finance_theme', t); }
 
-let transactions = loadTx();
+// ── State ────────────────────────────────────────────────────────────────────
+let transactions  = loadTx();
 let currentScreen = 'home';
-let addType = 'expense';
-let selectedCat = 'food';
-let statsPeriod = 'month';
+let addType       = 'expense';
+let selectedCat   = 'food';
+let statsPeriod   = 'month';
 let historyFilter = 'all';
+let currentTheme  = loadTheme();
 
-// ── DOM ────────────────────────────────────────────────────────────────────
+// Навигация по месяцам: offset = 0 → текущий, -1 → прошлый и т.д.
+let monthOffset = 0;
 
+// ── DOM ───────────────────────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
-const screens = {
-  home:    $('screen-home'),
-  add:     $('screen-add'),
-  history: $('screen-history'),
-  stats:   $('screen-stats'),
+const screens = { home: $('screen-home'), add: $('screen-add'), history: $('screen-history'), stats: $('screen-stats') };
+
+// ── Тема ─────────────────────────────────────────────────────────────────────
+const THEMES = {
+  dark:     { label: 'Dark',         desc: 'Тёмная с фиолетовым' },
+  glass:    { label: 'Liquid Glass', desc: 'iOS 26 — светлое стекло' },
+  midnight: { label: 'Midnight',     desc: 'Чёрный AMOLED' },
 };
 
-// ── Навигация ───────────────────────────────────────────────────────────────
+function applyTheme(t) {
+  currentTheme = t;
+  document.documentElement.setAttribute('data-theme', t === 'dark' ? '' : t);
+  if (t === 'dark') document.documentElement.removeAttribute('data-theme');
+  saveTheme(t);
+  renderThemeCards();
+}
 
+function vibrate(ms = 8) {
+  if (navigator.vibrate) navigator.vibrate(ms);
+}
+
+// ── Theme sheet ───────────────────────────────────────────────────────────────
+const overlay    = $('sheet-overlay');
+const themeSheet = $('theme-sheet');
+
+$('theme-btn').addEventListener('click', () => {
+  vibrate(6);
+  overlay.classList.add('open');
+  themeSheet.classList.add('open');
+});
+overlay.addEventListener('click', closeSheet);
+$('sheet-close').addEventListener('click', closeSheet);
+function closeSheet() {
+  overlay.classList.remove('open');
+  themeSheet.classList.remove('open');
+}
+
+function renderThemeCards() {
+  const container = $('theme-cards');
+  container.innerHTML = Object.entries(THEMES).map(([id, t]) => `
+    <div class="theme-card ${currentTheme === id ? 'active' : ''}" data-theme-id="${id}">
+      <div class="theme-preview theme-preview-${id}"></div>
+      <div class="theme-card-info">
+        <div class="theme-card-name">${t.label}</div>
+        <div class="theme-card-desc">${t.desc}</div>
+      </div>
+      <div class="theme-card-check">✓</div>
+    </div>
+  `).join('');
+  container.querySelectorAll('.theme-card').forEach(card => {
+    card.addEventListener('click', () => {
+      vibrate(10);
+      applyTheme(card.dataset.themeId);
+      setTimeout(closeSheet, 180);
+    });
+  });
+}
+
+// ── Навигация по экранам ──────────────────────────────────────────────────────
 function showScreen(name) {
-  Object.entries(screens).forEach(([k, el]) => {
-    el.classList.toggle('active', k === name);
-  });
-  document.querySelectorAll('.nav-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.screen === name);
-  });
+  Object.entries(screens).forEach(([k, el]) => el.classList.toggle('active', k === name));
+  document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.screen === name));
   currentScreen = name;
   if (name === 'home')    renderHome();
   if (name === 'history') renderHistory();
   if (name === 'stats')   renderStats();
 }
+document.querySelectorAll('.nav-btn').forEach(btn => btn.addEventListener('click', () => showScreen(btn.dataset.screen)));
 
-document.querySelectorAll('.nav-btn').forEach(btn => {
-  btn.addEventListener('click', () => showScreen(btn.dataset.screen));
-});
-
-// ── Экран: Главная ──────────────────────────────────────────────────────────
-
-function renderHome() {
-  const now = new Date();
-  const monthTx = transactions.filter(t => {
-    const d = new Date(t.date);
-    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+// ── Навигация по месяцам ──────────────────────────────────────────────────────
+function getViewDate() {
+  const d = new Date();
+  d.setMonth(d.getMonth() + monthOffset);
+  return d;
+}
+function getViewMonthTx() {
+  const d = getViewDate();
+  return transactions.filter(t => {
+    const td = new Date(t.date);
+    return td.getMonth() === d.getMonth() && td.getFullYear() === d.getFullYear();
   });
+}
+function updateMonthLabel() {
+  const d = getViewDate();
+  const label = d.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
+  $('month-label').textContent = label.charAt(0).toUpperCase() + label.slice(1);
+  $('btn-prev-month').style.opacity = '1';
+  $('btn-next-month').style.opacity = monthOffset >= 0 ? '0.3' : '1';
+  $('btn-next-month').style.pointerEvents = monthOffset >= 0 ? 'none' : 'auto';
+}
 
-  const income  = monthTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-  const expense = monthTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
-  const balance = income - expense;
+$('btn-prev-month').addEventListener('click', () => { vibrate(6); monthOffset--; renderHome(); });
+$('btn-next-month').addEventListener('click', () => { vibrate(6); if (monthOffset < 0) { monthOffset++; renderHome(); } });
 
-  $('balance-total').textContent  = fmt(balance);
-  $('month-income').textContent   = '+' + fmt(income);
-  $('month-expense').textContent  = '−' + fmt(expense);
+// ── Главная ───────────────────────────────────────────────────────────────────
+function renderHome() {
+  updateMonthLabel();
+  const monthTx  = getViewMonthTx();
+  const income   = monthTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+  const expense  = monthTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+  const balance  = income - expense;
 
-  const recent = [...transactions].sort((a,b) => b.date - a.date).slice(0, 20);
+  animateNumber($('balance-total'), balance, true);
+  $('month-income').textContent  = '+' + fmt(income);
+  $('month-expense').textContent = '−' + fmt(expense);
+
+  const recent = [...monthTx].sort((a, b) => b.date - a.date).slice(0, 30);
   const list = $('home-tx-list');
-
   if (!recent.length) {
-    list.innerHTML = `<div class="empty-state"><div class="emoji">💳</div><p>Транзакций пока нет.<br>Добавь первую!</p></div>`;
+    list.innerHTML = `<div class="empty-state"><div class="emoji">💳</div><p>В этом месяце пока нет записей.<br>Нажми «Расход» или «Доход».</p></div>`;
     return;
   }
   list.innerHTML = recent.map(txHtml).join('');
-  list.querySelectorAll('.tx-delete').forEach(btn => {
-    btn.addEventListener('click', () => deleteTx(btn.dataset.id));
+  attachSwipe(list);
+}
+
+// Анимация числа баланса
+function animateNumber(el, target, currency = false) {
+  const duration = 500;
+  const start = Date.now();
+  const from = parseFloat(el.dataset.value || '0') || 0;
+  el.dataset.value = target;
+
+  function tick() {
+    const elapsed = Date.now() - start;
+    const progress = Math.min(elapsed / duration, 1);
+    const ease = 1 - Math.pow(1 - progress, 3);
+    const current = from + (target - from) * ease;
+    el.textContent = fmt(current);
+    if (progress < 1) requestAnimationFrame(tick);
+    else el.textContent = fmt(target);
+  }
+  requestAnimationFrame(tick);
+}
+
+// ── Свайп для удаления ────────────────────────────────────────────────────────
+function attachSwipe(container) {
+  container.querySelectorAll('.tx-item').forEach(item => {
+    const inner = item.querySelector('.tx-item-inner');
+    const bg    = item.querySelector('.tx-delete-bg');
+    let startX = 0, currentX = 0, dragging = false;
+    const THRESHOLD = 72;
+
+    item.addEventListener('touchstart', e => {
+      startX = e.touches[0].clientX;
+      dragging = true;
+    }, { passive: true });
+
+    item.addEventListener('touchmove', e => {
+      if (!dragging) return;
+      currentX = e.touches[0].clientX - startX;
+      if (currentX > 0) currentX = 0;
+      const clamped = Math.max(currentX, -80);
+      inner.style.transform = `translateX(${clamped}px)`;
+      bg.style.opacity = Math.min(-clamped / THRESHOLD, 1).toString();
+    }, { passive: true });
+
+    item.addEventListener('touchend', () => {
+      if (!dragging) return;
+      dragging = false;
+      if (currentX < -THRESHOLD) {
+        inner.style.transform = 'translateX(-80px)';
+        bg.style.opacity = '1';
+        vibrate(12);
+        setTimeout(() => {
+          item.style.transition = 'all 0.25s ease';
+          item.style.opacity = '0';
+          item.style.transform = 'scaleY(0.8)';
+          item.style.marginBottom = '-62px';
+          setTimeout(() => deleteTx(item.dataset.id), 240);
+        }, 180);
+      } else {
+        inner.style.transform = '';
+        bg.style.opacity = '0';
+      }
+      currentX = 0;
+    });
   });
 }
 
-// ── Экран: Добавление ───────────────────────────────────────────────────────
-
+// ── Добавление ────────────────────────────────────────────────────────────────
 function openAdd(type = 'expense') {
-  addType = type;
+  addType    = type;
   selectedCat = type === 'income' ? 'salary' : 'food';
   $('amount-input').value = '';
   $('note-input').value = '';
@@ -110,8 +232,8 @@ function openAdd(type = 'expense') {
   setTimeout(() => $('amount-input').focus(), 300);
 }
 
-$('btn-expense').addEventListener('click', () => openAdd('expense'));
-$('btn-income').addEventListener('click',  () => openAdd('income'));
+$('btn-expense').addEventListener('click', () => { vibrate(8); openAdd('expense'); });
+$('btn-income').addEventListener('click',  () => { vibrate(8); openAdd('income'); });
 
 document.querySelectorAll('.type-btn').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -124,10 +246,8 @@ document.querySelectorAll('.type-btn').forEach(btn => {
 
 function updateTypeToggle() {
   document.querySelectorAll('.type-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.type === addType);
-    btn.className = btn.dataset.type === addType
-      ? `type-btn active ${addType}`
-      : 'type-btn';
+    const isActive = btn.dataset.type === addType;
+    btn.className = isActive ? `type-btn active ${addType}` : 'type-btn';
   });
 }
 
@@ -141,6 +261,7 @@ function renderCategories() {
   `).join('');
   grid.querySelectorAll('.cat-btn').forEach(btn => {
     btn.addEventListener('click', () => {
+      vibrate(6);
       selectedCat = btn.dataset.id;
       renderCategories();
     });
@@ -148,10 +269,11 @@ function renderCategories() {
 }
 
 $('save-btn').addEventListener('click', () => {
-  const raw = $('amount-input').value.replace(',', '.');
+  const raw    = $('amount-input').value.replace(',', '.');
   const amount = parseFloat(raw);
   if (!amount || amount <= 0) { toast('Введи сумму'); return; }
 
+  vibrate([8, 40, 12]);
   const tx = {
     id:     Date.now().toString(),
     type:   addType,
@@ -166,15 +288,13 @@ $('save-btn').addEventListener('click', () => {
   showScreen('home');
 });
 
-// ── Экран: История ──────────────────────────────────────────────────────────
-
+// ── История ───────────────────────────────────────────────────────────────────
 function renderHistory() {
-  let list = [...transactions].sort((a,b) => b.date - a.date);
+  let list = [...transactions].sort((a, b) => b.date - a.date);
   if (historyFilter !== 'all') list = list.filter(t => t.type === historyFilter);
 
-  document.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.filter === historyFilter);
-  });
+  document.querySelectorAll('.filter-btn').forEach(btn =>
+    btn.classList.toggle('active', btn.dataset.filter === historyFilter));
 
   const el = $('history-tx-list');
   if (!list.length) {
@@ -182,31 +302,23 @@ function renderHistory() {
     return;
   }
 
-  let html = '';
-  let lastDate = '';
+  let html = ''; let lastDate = '';
   list.forEach(tx => {
     const d = fmtDate(tx.date);
     if (d !== lastDate) {
-      html += `<div class="section-title" style="padding-left:4px;margin-top:8px">${d}</div>`;
+      html += `<div class="section-title" style="padding:10px 4px 6px">${d}</div>`;
       lastDate = d;
     }
     html += txHtml(tx);
   });
   el.innerHTML = html;
-  el.querySelectorAll('.tx-delete').forEach(btn => {
-    btn.addEventListener('click', () => deleteTx(btn.dataset.id));
-  });
+  attachSwipe(el);
 }
 
-document.querySelectorAll('.filter-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    historyFilter = btn.dataset.filter;
-    renderHistory();
-  });
-});
+document.querySelectorAll('.filter-btn').forEach(btn =>
+  btn.addEventListener('click', () => { historyFilter = btn.dataset.filter; renderHistory(); }));
 
-// ── Экран: Статистика ───────────────────────────────────────────────────────
-
+// ── Статистика ────────────────────────────────────────────────────────────────
 let chart = null;
 
 function renderStats() {
@@ -219,138 +331,134 @@ function renderStats() {
       return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
     });
   } else if (statsPeriod === 'week') {
-    const week = Date.now() - 7 * 86400000;
-    filtered = transactions.filter(t => t.date >= week);
+    filtered = transactions.filter(t => t.date >= Date.now() - 7 * 86400000);
   }
 
-  const totalIncome  = filtered.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0);
-  const totalExpense = filtered.filter(t => t.type === 'expense').reduce((s,t) => s + t.amount, 0);
+  const totalIncome  = filtered.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+  const totalExpense = filtered.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
 
   $('stat-income').textContent  = fmt(totalIncome);
   $('stat-expense').textContent = fmt(totalExpense);
   $('stat-balance').textContent = fmt(totalIncome - totalExpense);
 
-  // Расходы по категориям
   const byCat = {};
   filtered.filter(t => t.type === 'expense').forEach(t => {
     byCat[t.cat] = (byCat[t.cat] || 0) + t.amount;
   });
-  const sorted = Object.entries(byCat).sort((a,b) => b[1] - a[1]);
+  const sorted = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
   const maxAmt = sorted[0]?.[1] || 1;
 
   const catEl = $('cat-stats');
-  if (!sorted.length) {
-    catEl.innerHTML = '<div style="color:var(--text2);font-size:14px;padding:8px 0">Расходов пока нет</div>';
-  } else {
-    catEl.innerHTML = sorted.map(([id, amt]) => {
-      const c = CAT_MAP[id] || { emoji: '💸', name: id };
-      const pct = Math.round(amt / maxAmt * 100);
-      return `
-        <div class="cat-stat-item">
-          <span class="cat-stat-emoji">${c.emoji}</span>
-          <div class="cat-stat-info">
-            <div class="cat-stat-name">${c.name}</div>
-            <div class="cat-stat-bar-wrap"><div class="cat-stat-bar" style="width:${pct}%"></div></div>
+  catEl.innerHTML = !sorted.length
+    ? '<div style="color:var(--text2);font-size:14px;padding:6px 0">Расходов пока нет</div>'
+    : sorted.map(([id, amt]) => {
+        const c = CAT_MAP[id] || { emoji:'💸', name: id };
+        return `
+          <div class="cat-stat-item">
+            <span class="cat-stat-emoji">${c.emoji}</span>
+            <div class="cat-stat-info">
+              <div class="cat-stat-name">${c.name}</div>
+              <div class="cat-stat-bar-wrap">
+                <div class="cat-stat-bar" style="width:${Math.round(amt/maxAmt*100)}%"></div>
+              </div>
+            </div>
+            <div class="cat-stat-amount">−${fmt(amt)}</div>
           </div>
-          <div class="cat-stat-amount">−${fmt(amt)}</div>
-        </div>
-      `;
-    }).join('');
-  }
+        `;
+      }).join('');
 
-  // График доходы/расходы по дням (последние 7 или 30 дней)
   const days = statsPeriod === 'week' ? 7 : 30;
   const labels = [], incomes = [], expenses = [];
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date(); d.setDate(d.getDate() - i);
-    const key = `${d.getDate()}/${d.getMonth()+1}`;
-    labels.push(key);
+    labels.push(`${d.getDate()}/${d.getMonth()+1}`);
     const dayTx = filtered.filter(t => {
       const td = new Date(t.date);
       return td.getDate() === d.getDate() && td.getMonth() === d.getMonth();
     });
-    incomes.push(dayTx.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0));
-    expenses.push(dayTx.filter(t => t.type === 'expense').reduce((s,t) => s + t.amount, 0));
+    incomes.push(dayTx.filter(t => t.type === 'income').reduce((s,t) => s+t.amount, 0));
+    expenses.push(dayTx.filter(t => t.type === 'expense').reduce((s,t) => s+t.amount, 0));
   }
 
   if (chart) chart.destroy();
-  const ctx = $('chart').getContext('2d');
-  chart = new Chart(ctx, {
+  chart = new Chart($('chart').getContext('2d'), {
     type: 'bar',
     data: {
       labels,
       datasets: [
-        { label: 'Доходы',  data: incomes,  backgroundColor: 'rgba(48,215,128,0.7)', borderRadius: 4 },
-        { label: 'Расходы', data: expenses, backgroundColor: 'rgba(255,90,90,0.7)',  borderRadius: 4 },
+        { label:'Доходы',  data:incomes,  backgroundColor:'rgba(48,215,128,0.7)', borderRadius:4 },
+        { label:'Расходы', data:expenses, backgroundColor:'rgba(255,77,106,0.7)', borderRadius:4 },
       ]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { labels: { color: '#8888a8', font: { size: 11 } } } },
+      plugins: { legend: { labels: { color: 'rgba(255,255,255,0.4)', font:{ size:11 } } } },
       scales: {
-        x: { ticks: { color: '#8888a8', font: { size: 10 } }, grid: { color: '#2e2e3e' } },
-        y: { ticks: { color: '#8888a8', font: { size: 10 } }, grid: { color: '#2e2e3e' } },
+        x: { ticks:{ color:'rgba(255,255,255,0.35)', font:{size:10} }, grid:{ color:'rgba(255,255,255,0.06)' } },
+        y: { ticks:{ color:'rgba(255,255,255,0.35)', font:{size:10} }, grid:{ color:'rgba(255,255,255,0.06)' } },
       }
     }
   });
 }
 
-document.querySelectorAll('.period-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    statsPeriod = btn.dataset.period;
-    document.querySelectorAll('.period-btn').forEach(b => b.classList.toggle('active', b === btn));
-    renderStats();
-  });
-});
+document.querySelectorAll('.period-btn').forEach(btn => btn.addEventListener('click', () => {
+  statsPeriod = btn.dataset.period;
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.toggle('active', b === btn));
+  renderStats();
+}));
 
-// ── Удаление ────────────────────────────────────────────────────────────────
-
+// ── Удаление ──────────────────────────────────────────────────────────────────
 function deleteTx(id) {
   transactions = transactions.filter(t => t.id !== id);
   saveTx(transactions);
   if (currentScreen === 'home')    renderHome();
   if (currentScreen === 'history') renderHistory();
   if (currentScreen === 'stats')   renderStats();
-  toast('Удалено');
 }
 
-// ── Утилиты ─────────────────────────────────────────────────────────────────
-
-function fmt(n) {
-  return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 0 }).format(n);
-}
-
-function fmtDate(ts) {
-  const d = new Date(ts);
-  const today = new Date();
-  const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
-  if (d.toDateString() === today.toDateString()) return 'Сегодня';
-  if (d.toDateString() === yesterday.toDateString()) return 'Вчера';
-  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
-}
-
-function fmtTime(ts) {
-  return new Date(ts).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-}
-
+// ── Вёрстка транзакции ────────────────────────────────────────────────────────
 function txHtml(tx) {
-  const c = CAT_MAP[tx.cat] || { emoji: '💸', name: tx.cat };
+  const c    = CAT_MAP[tx.cat] || { emoji:'💸', name: tx.cat };
   const sign = tx.type === 'income' ? '+' : '−';
-  const cls  = tx.type;
-  const bg   = tx.type === 'income' ? 'rgba(48,215,128,0.12)' : 'rgba(255,90,90,0.12)';
+  const bg   = tx.type === 'income' ? 'rgba(48,215,128,0.12)' : 'rgba(255,77,106,0.12)';
+  // Не дублируем название категории в note
+  const noteText = tx.note && tx.note.toLowerCase() !== c.name.toLowerCase() ? tx.note : '';
+
   return `
-    <div class="tx-item">
-      <div class="tx-icon" style="background:${bg}">${c.emoji}</div>
-      <div class="tx-info">
-        <div class="tx-category">${c.name}${tx.note ? ` · ${tx.note}` : ''}</div>
-        <div class="tx-date">${fmtTime(tx.date)}</div>
+    <div class="tx-item" data-id="${tx.id}">
+      <div class="tx-delete-bg">🗑️</div>
+      <div class="tx-item-inner">
+        <div class="tx-icon" style="background:${bg}">${c.emoji}</div>
+        <div class="tx-info">
+          <div class="tx-category">${c.name}${noteText ? ` · ${noteText}` : ''}</div>
+          <div class="tx-meta">
+            <span class="tx-date">${fmtTime(tx.date)}</span>
+          </div>
+        </div>
+        <div class="tx-amount ${tx.type}">${sign}${fmt(tx.amount)}</div>
       </div>
-      <div class="tx-amount ${cls}">${sign}${fmt(tx.amount)}</div>
-      <button class="tx-delete" data-id="${tx.id}" title="Удалить">×</button>
     </div>
   `;
 }
 
+// ── Форматирование ────────────────────────────────────────────────────────────
+function fmt(n) {
+  return new Intl.NumberFormat('ru-RU', {
+    style:'currency', currency:'RUB', maximumFractionDigits:0
+  }).format(n);
+}
+function fmtDate(ts) {
+  const d = new Date(ts), today = new Date(), yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (d.toDateString() === today.toDateString()) return 'Сегодня';
+  if (d.toDateString() === yesterday.toDateString()) return 'Вчера';
+  return d.toLocaleDateString('ru-RU', { day:'numeric', month:'long' });
+}
+function fmtTime(ts) {
+  return new Date(ts).toLocaleTimeString('ru-RU', { hour:'2-digit', minute:'2-digit' });
+}
+
+// ── Toast ──────────────────────────────────────────────────────────────────────
 let toastTimer;
 function toast(msg) {
   const el = $('toast');
@@ -360,29 +468,21 @@ function toast(msg) {
   toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
 }
 
-// ── Deep links (для Shortcuts) ───────────────────────────────────────────────
-
+// ── Deep links ────────────────────────────────────────────────────────────────
 function handleDeepLink() {
-  const p = new URLSearchParams(location.search);
-  const action = p.get('action');
+  const action = new URLSearchParams(location.search).get('action');
   if (action === 'expense') openAdd('expense');
   else if (action === 'income') openAdd('income');
   else showScreen('home');
 }
 
-// ── Числовая клавиатура: запятая ─────────────────────────────────────────────
-
-$('amount-input').addEventListener('keydown', e => {
-  if (e.key === ',') { e.preventDefault(); $('amount-input').value += '.'; }
-});
-
-// ── Service Worker ───────────────────────────────────────────────────────────
-
+// ── Service Worker ────────────────────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/finance-app/sw.js').catch(() => {});
 }
 
-// ── Старт ────────────────────────────────────────────────────────────────────
-
+// ── Запуск ────────────────────────────────────────────────────────────────────
+applyTheme(currentTheme);
+renderThemeCards();
 renderCategories();
 handleDeepLink();
