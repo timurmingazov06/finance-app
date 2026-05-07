@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Финансы">
+  <meta name="theme-color" content="#0f0f13">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <title>Финансы</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- ── Главная ── -->
+  <div id="screen-home" class="screen active">
+    <div class="header">
+      <div class="header-row">
+        <h1>Финансы</h1>
+      </div>
+    </div>
+
+    <div class="balance-card">
+      <div class="balance-label">Баланс за месяц</div>
+      <div class="balance-amount" id="balance-total">0 ₽</div>
+      <div class="balance-row">
+        <div class="balance-pill">
+          <div class="balance-pill-label">Доходы</div>
+          <div class="balance-pill-value income" id="month-income">0 ₽</div>
+        </div>
+        <div class="balance-pill">
+          <div class="balance-pill-label">Расходы</div>
+          <div class="balance-pill-value expense" id="month-expense">0 ₽</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="quick-btns">
+      <button class="quick-btn expense" id="btn-expense">
+        <span>−</span> Расход
+      </button>
+      <button class="quick-btn income" id="btn-income">
+        <span>+</span> Доход
+      </button>
+    </div>
+
+    <div class="section-title">Последние операции</div>
+    <div class="tx-list" id="home-tx-list"></div>
+  </div>
+
+  <!-- ── Добавление ── -->
+  <div id="screen-add" class="screen">
+    <div class="add-header">
+      <h2>Новая запись</h2>
+    </div>
+
+    <div class="type-toggle">
+      <button class="type-btn active expense" data-type="expense">Расход</button>
+      <button class="type-btn" data-type="income">Доход</button>
+    </div>
+
+    <div class="amount-input-wrap">
+      <input
+        id="amount-input"
+        class="amount-input"
+        type="number"
+        inputmode="decimal"
+        placeholder="0"
+        min="0"
+        step="any"
+      >
+    </div>
+
+    <div class="field-wrap">
+      <div class="field-label">Категория</div>
+      <div class="categories-grid" id="categories-grid"></div>
+    </div>
+
+    <div class="field-wrap">
+      <div class="field-label">Комментарий (необязательно)</div>
+      <input id="note-input" class="note-input" type="text" placeholder="Например: обед в кафе">
+    </div>
+
+    <button class="save-btn" id="save-btn">Сохранить</button>
+  </div>
+
+  <!-- ── История ── -->
+  <div id="screen-history" class="screen">
+    <div class="header">
+      <h1>История</h1>
+    </div>
+    <div class="history-filters">
+      <button class="filter-btn active" data-filter="all">Все</button>
+      <button class="filter-btn" data-filter="expense">Расходы</button>
+      <button class="filter-btn" data-filter="income">Доходы</button>
+    </div>
+    <div class="tx-list" id="history-tx-list"></div>
+  </div>
+
+  <!-- ── Статистика ── -->
+  <div id="screen-stats" class="screen">
+    <div class="header">
+      <h1>Статистика</h1>
+    </div>
+    <div class="stats-scroll">
+
+      <div class="period-toggle">
+        <button class="period-btn active" data-period="month">Месяц</button>
+        <button class="period-btn" data-period="week">Неделя</button>
+        <button class="period-btn" data-period="all">Всё время</button>
+      </div>
+
+      <div class="stats-card">
+        <h3>Сводка</h3>
+        <div style="display:flex;gap:10px">
+          <div style="flex:1;background:rgba(48,215,128,0.08);border-radius:12px;padding:12px">
+            <div style="font-size:12px;color:var(--text2);margin-bottom:4px">Доходы</div>
+            <div style="font-size:18px;font-weight:700;color:var(--green)" id="stat-income">0 ₽</div>
+          </div>
+          <div style="flex:1;background:rgba(255,90,90,0.08);border-radius:12px;padding:12px">
+            <div style="font-size:12px;color:var(--text2);margin-bottom:4px">Расходы</div>
+            <div style="font-size:18px;font-weight:700;color:var(--red)" id="stat-expense">0 ₽</div>
+          </div>
+          <div style="flex:1;background:rgba(108,108,255,0.08);border-radius:12px;padding:12px">
+            <div style="font-size:12px;color:var(--text2);margin-bottom:4px">Итог</div>
+            <div style="font-size:18px;font-weight:700;color:var(--accent)" id="stat-balance">0 ₽</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-card">
+        <h3>По дням</h3>
+        <div class="chart-wrap">
+          <canvas id="chart"></canvas>
+        </div>
+      </div>
+
+      <div class="stats-card">
+        <h3>Расходы по категориям</h3>
+        <div id="cat-stats"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Навигация ── -->
+  <nav class="nav">
+    <button class="nav-btn active" data-screen="home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+      Главная
+    </button>
+    <button class="nav-btn" data-screen="add">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+      </svg>
+      Добавить
+    </button>
+    <button class="nav-btn" data-screen="history">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+      </svg>
+      История
+    </button>
+    <button class="nav-btn" data-screen="stats">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+      </svg>
+      Статистика
+    </button>
+  </nav>
+
+  <div id="toast" class="toast"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
