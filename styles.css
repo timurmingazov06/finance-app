@@ -27,7 +27,8 @@
   --save-shadow:  rgba(91,141,239,0.28);
   --sheet-bg:     #111120;
   --shadow:       none;
-  --safe: env(safe-area-inset-bottom, 0px);
+  --safe:     env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
 }
 
 /* ══════════════════════════════════════════
@@ -70,7 +71,7 @@
     radial-gradient(ellipse 60% 50% at 50% 100%,  #0ea5e9 0%, transparent 55%),
     radial-gradient(ellipse 55% 45% at 85% 85%,  #059669 0%, transparent 55%),
     #1e0a3c;
-  background-attachment: fixed;
+  /* background-attachment: fixed не работает на iOS Safari — body не скроллится, фон зафиксирован */
 }
 [data-theme="glass"] #app::before { background: none; }
 
@@ -227,7 +228,7 @@ html, body {
 /* ════════════════════════════════════════
    HEADER
 ════════════════════════════════════════ */
-.header { padding: 56px 20px 10px; flex-shrink: 0; }
+.header { padding: max(56px, calc(var(--safe-top) + 14px)) 20px 10px; flex-shrink: 0; }
 .header h1 { font-size: 30px; font-weight: 700; letter-spacing: -0.5px; }
 .header-row { display: flex; align-items: center; justify-content: space-between; }
 
@@ -426,7 +427,7 @@ html, body {
 /* ════════════════════════════════════════
    ADD SCREEN
 ════════════════════════════════════════ */
-.add-header { padding: 56px 22px 14px; flex-shrink: 0; }
+.add-header { padding: max(56px, calc(var(--safe-top) + 14px)) 22px 14px; flex-shrink: 0; }
 .add-header h2 { font-size: 26px; font-weight: 700; letter-spacing: -0.4px; }
 
 .type-toggle {
@@ -572,7 +573,7 @@ html, body {
 .cat-stat-emoji { font-size: 20px; width: 28px; text-align: center; }
 .cat-stat-info  { flex: 1; }
 .cat-stat-name  { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
-.cat-stat-bar-wrap { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.cat-stat-bar-wrap { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
 .cat-stat-bar {
   height: 100%; border-radius: 2px;
   background: linear-gradient(90deg, var(--blue), var(--purple));
@@ -630,7 +631,7 @@ html, body {
   background: linear-gradient(135deg, #080810 0%, #1a1a6e 50%, #080810 100%);
 }
 .theme-preview-glass {
-  background: linear-gradient(135deg, #dde9ff 0%, #e8d5ff 50%, #eef0f5 100%);
+  background: linear-gradient(135deg, #7c3aed 0%, #db2777 50%, #0ea5e9 100%);
 }
 .theme-preview-midnight {
   background: linear-gradient(135deg, #000 0%, #0d0d2e 50%, #000 100%);
@@ -690,8 +691,9 @@ html, body {
 
 .numpad {
   display: grid; grid-template-columns: repeat(3, 1fr);
-  gap: 8px; padding: 0 16px; margin-bottom: 10px; flex-shrink: 0;
+  gap: 8px; padding: 0 16px calc(var(--safe) + 74px); flex-shrink: 0;
 }
+#edit-numpad { padding-bottom: 0; }
 .numpad-key {
   background: var(--glass); border: 1px solid var(--border);
   border-radius: 16px; padding: 0; height: 52px;
