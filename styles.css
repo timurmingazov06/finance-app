@@ -32,56 +32,124 @@
 
 /* ══════════════════════════════════════════
    ТЕМА: LIQUID GLASS (iOS 26)
+   Яркий фон виден сквозь матовое стекло
 ══════════════════════════════════════════ */
 [data-theme="glass"] {
-  --bg:           #eef0f5;
-  --bg2:          rgba(255,255,255,0.85);
-  --glass:        rgba(255,255,255,0.62);
-  --glass-hover:  rgba(255,255,255,0.85);
-  --border:       rgba(0,0,0,0.07);
-  --text:         #1c1c1e;
-  --text2:        rgba(0,0,0,0.42);
-  --text3:        rgba(0,0,0,0.22);
-  --green:        #1aab57;
-  --green-bg:     rgba(26,171,87,0.1);
-  --red:          #e8203a;
-  --red-bg:       rgba(232,32,58,0.09);
-  --blue:         #007aff;
-  --blue-bg:      rgba(0,122,255,0.1);
-  --purple:       #8e44e8;
-  --nav-bg:       rgba(242,242,247,0.82);
-  --card-grad:    linear-gradient(135deg, #dde9ff 0%, #e8d5ff 50%, #ddefff 100%);
-  --card-glow1:   rgba(142,68,232,0.15);
-  --card-glow2:   rgba(0,122,255,0.12);
-  --save-btn:     linear-gradient(135deg, #0071f0 0%, #7b2ff7 100%);
-  --save-shadow:  rgba(0,122,255,0.25);
-  --sheet-bg:     rgba(255,255,255,0.95);
-  --shadow:       0 2px 20px rgba(0,0,0,0.08);
+  --bg:           transparent;
+  --bg2:          rgba(255,255,255,0.18);
+  --glass:        rgba(255,255,255,0.16);
+  --glass-hover:  rgba(255,255,255,0.26);
+  --border:       rgba(255,255,255,0.32);
+  --text:         #fff;
+  --text2:        rgba(255,255,255,0.62);
+  --text3:        rgba(255,255,255,0.38);
+  --green:        #4ade80;
+  --green-bg:     rgba(74,222,128,0.15);
+  --red:          #ff6b81;
+  --red-bg:       rgba(255,107,129,0.15);
+  --blue:         #60a5fa;
+  --blue-bg:      rgba(96,165,250,0.15);
+  --purple:       #c084fc;
+  --nav-bg:       rgba(255,255,255,0.14);
+  --card-grad:    linear-gradient(135deg,
+                    rgba(255,255,255,0.22) 0%,
+                    rgba(255,255,255,0.10) 100%);
+  --card-glow1:   rgba(255,255,255,0.2);
+  --card-glow2:   rgba(255,255,255,0.1);
+  --save-btn:     linear-gradient(135deg, rgba(96,165,250,0.7) 0%, rgba(192,132,252,0.7) 100%);
+  --save-shadow:  rgba(96,165,250,0.2);
+  --sheet-bg:     rgba(30,20,60,0.72);
+  --shadow:       0 4px 24px rgba(0,0,0,0.15);
 }
-[data-theme="glass"] body { background: var(--bg); }
-[data-theme="glass"] #app::before {
+
+/* Яркий градиент-обои за стеклом */
+[data-theme="glass"] body {
   background:
-    radial-gradient(ellipse 55% 40% at 15% 5%, rgba(0,122,255,0.08) 0%, transparent 70%),
-    radial-gradient(ellipse 50% 35% at 85% 95%, rgba(142,68,232,0.08) 0%, transparent 70%),
-    radial-gradient(ellipse 40% 30% at 50% 50%, rgba(255,149,0,0.04) 0%, transparent 70%);
+    radial-gradient(ellipse 70% 55% at 10% 10%,  #7c3aed 0%, transparent 55%),
+    radial-gradient(ellipse 65% 50% at 90% 5%,   #db2777 0%, transparent 55%),
+    radial-gradient(ellipse 60% 50% at 50% 100%,  #0ea5e9 0%, transparent 55%),
+    radial-gradient(ellipse 55% 45% at 85% 85%,  #059669 0%, transparent 55%),
+    #1e0a3c;
+  background-attachment: fixed;
 }
-[data-theme="glass"] .balance-amount { color: #1c1c1e; }
-[data-theme="glass"] .balance-label  { color: rgba(0,0,0,0.45); }
-[data-theme="glass"] .balance-pill   { background: rgba(255,255,255,0.55); border-color: rgba(255,255,255,0.7); }
-[data-theme="glass"] .balance-pill-label { color: rgba(0,0,0,0.4); }
-[data-theme="glass"] .tx-amount.income  { color: var(--green); }
-[data-theme="glass"] .tx-amount.expense { color: var(--red); }
-[data-theme="glass"] .balance-pill-value.income  { color: var(--green); }
-[data-theme="glass"] .balance-pill-value.expense { color: var(--red); }
-[data-theme="glass"] .nav { border-top-color: rgba(0,0,0,0.08); }
-[data-theme="glass"] .type-toggle { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.07); }
-[data-theme="glass"] .amount-display { border-color: rgba(0,0,0,0.07); box-shadow: var(--shadow); }
-[data-theme="glass"] .note-input { border-color: rgba(0,0,0,0.07); background: rgba(255,255,255,0.7); }
-[data-theme="glass"] .stats-card, [data-theme="glass"] .tx-item { box-shadow: var(--shadow); }
-[data-theme="glass"] .header h1, [data-theme="glass"] .add-header h2 { color: #1c1c1e; }
-[data-theme="glass"] .month-nav-btn { color: var(--blue); }
-[data-theme="glass"] .theme-sheet    { background: rgba(255,255,255,0.96); }
-[data-theme="glass"] .theme-card     { box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+[data-theme="glass"] #app::before { background: none; }
+
+/* Баланс-карта: настоящее стекло */
+[data-theme="glass"] .balance-card {
+  background: rgba(255,255,255,0.14);
+  backdrop-filter: blur(28px) saturate(1.4);
+  -webkit-backdrop-filter: blur(28px) saturate(1.4);
+  border: 1px solid rgba(255,255,255,0.3);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), 0 8px 32px rgba(0,0,0,0.2);
+}
+[data-theme="glass"] .balance-card::before { background: radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 70%); }
+[data-theme="glass"] .balance-card::after  { background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%); }
+[data-theme="glass"] .balance-pill {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.2);
+}
+[data-theme="glass"] .balance-pill-label { color: rgba(255,255,255,0.55); }
+[data-theme="glass"] .balance-pill-value.income  { color: #86efac; }
+[data-theme="glass"] .balance-pill-value.expense { color: #fca5a5; }
+
+/* Транзакции: стекло */
+[data-theme="glass"] .tx-item {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.2);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.2);
+}
+[data-theme="glass"] .tx-item:active { background: rgba(255,255,255,0.2); }
+
+/* Навбар */
+[data-theme="glass"] .nav {
+  background: rgba(255,255,255,0.12);
+  backdrop-filter: blur(28px) saturate(1.4);
+  -webkit-backdrop-filter: blur(28px) saturate(1.4);
+  border-top-color: rgba(255,255,255,0.18);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.25);
+}
+
+/* Статс карты, фильтры, тогглы */
+[data-theme="glass"] .stats-card,
+[data-theme="glass"] .type-toggle,
+[data-theme="glass"] .amount-display,
+[data-theme="glass"] .cat-btn,
+[data-theme="glass"] .filter-btn,
+[data-theme="glass"] .period-btn {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.2);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+[data-theme="glass"] .note-input {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.2);
+  color: #fff;
+}
+[data-theme="glass"] .note-input::placeholder { color: rgba(255,255,255,0.38); }
+
+/* Шторка темы */
+[data-theme="glass"] .theme-sheet {
+  backdrop-filter: blur(36px);
+  -webkit-backdrop-filter: blur(36px);
+}
+[data-theme="glass"] .theme-card {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.2);
+}
+[data-theme="glass"] .theme-card.active {
+  border-color: var(--blue);
+  background: rgba(96,165,250,0.2);
+}
+
+/* Quick chips */
+[data-theme="glass"] .quick-chip {
+  background: rgba(255,255,255,0.14);
+  border-color: rgba(255,255,255,0.22);
+  color: #fff;
+}
 
 /* ══════════════════════════════════════════
    ТЕМА: MIDNIGHT (AMOLED)
@@ -572,6 +640,34 @@ html, body {
 .theme-card-desc  { font-size: 12px; color: var(--text2); }
 .theme-card-check { font-size: 20px; opacity: 0; transition: opacity 0.15s; }
 .theme-card.active .theme-card-check { opacity: 1; }
+
+/* ════════════════════════════════════════
+   ТРЕНД
+════════════════════════════════════════ */
+.trend-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 12px; font-weight: 600;
+  padding: 3px 8px; border-radius: 20px;
+  margin-top: 4px; position: relative; z-index: 1;
+}
+.trend-badge.up   { background: rgba(74,222,128,0.15); color: #4ade80; }
+.trend-badge.down { background: rgba(255,107,129,0.15); color: #ff6b81; }
+.trend-badge.flat { background: rgba(255,255,255,0.1);  color: rgba(255,255,255,0.5); }
+
+/* ════════════════════════════════════════
+   БЫСТРЫЕ ЧИПСЫ СУММЫ
+════════════════════════════════════════ */
+.quick-chips {
+  display: flex; gap: 7px; padding: 0 16px; margin-bottom: 14px; flex-shrink: 0;
+}
+.quick-chip {
+  flex: 1; background: var(--glass); border: 1px solid var(--border);
+  border-radius: 10px; padding: 8px 4px;
+  font-size: 13px; font-weight: 600; color: var(--text2);
+  cursor: pointer; text-align: center;
+  transition: all 0.12s ease; backdrop-filter: blur(8px);
+}
+.quick-chip:active { transform: scale(0.93); background: var(--glass-hover); color: var(--text); }
 
 /* ════════════════════════════════════════
    TOAST

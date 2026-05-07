@@ -146,6 +146,7 @@ function renderHome() {
   $('month-income').textContent  = '+' + fmt(income);
   $('month-expense').textContent = '−' + fmt(expense);
 
+  renderTrend(expense);
   const recent = [...monthTx].sort((a, b) => b.date - a.date).slice(0, 30);
   const list = $('home-tx-list');
   if (!recent.length) {
@@ -154,6 +155,33 @@ function renderHome() {
   }
   list.innerHTML = recent.map(txHtml).join('');
   attachSwipe(list);
+}
+
+// ── Тренд vs прошлый месяц ───────────────────────────────────────────────────
+function renderTrend(curExpense) {
+  const el = $('trend-badge');
+  if (!el) return;
+
+  const ref = new Date(); ref.setMonth(ref.getMonth() + monthOffset - 1);
+  const prevTx = transactions.filter(t => {
+    const d = new Date(t.date);
+    return t.type === 'expense' && d.getMonth() === ref.getMonth() && d.getFullYear() === ref.getFullYear();
+  });
+  const prevExpense = prevTx.reduce((s, t) => s + t.amount, 0);
+
+  if (!prevExpense || monthOffset !== 0) { el.innerHTML = ''; return; }
+
+  const diff = curExpense - prevExpense;
+  const pct  = Math.round(Math.abs(diff) / prevExpense * 100);
+  const prevMonthName = ref.toLocaleDateString('ru-RU', { month: 'long' });
+
+  if (Math.abs(pct) < 2) {
+    el.innerHTML = `<span class="trend-badge flat">≈ как в ${prevMonthName}</span>`;
+  } else if (diff > 0) {
+    el.innerHTML = `<span class="trend-badge down">↑ +${pct}% расходов vs ${prevMonthName}</span>`;
+  } else {
+    el.innerHTML = `<span class="trend-badge up">↓ −${pct}% расходов vs ${prevMonthName}</span>`;
+  }
 }
 
 // Анимация числа баланса
@@ -267,6 +295,15 @@ function renderCategories() {
     });
   });
 }
+
+// ── Быстрые чипсы суммы ──────────────────────────────────────────────────────
+document.querySelectorAll('.quick-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    vibrate(6);
+    const cur = parseFloat($('amount-input').value) || 0;
+    $('amount-input').value = cur + parseInt(chip.dataset.val);
+  });
+});
 
 $('save-btn').addEventListener('click', () => {
   const raw    = $('amount-input').value.replace(',', '.');
