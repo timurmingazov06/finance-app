@@ -670,6 +670,82 @@ html, body {
 .quick-chip:active { transform: scale(0.93); background: var(--glass-hover); color: var(--text); }
 
 /* ════════════════════════════════════════
+   КАСТОМНЫЙ NUMPAD
+════════════════════════════════════════ */
+.numpad-display {
+  margin: 0 16px 10px; flex-shrink: 0;
+  background: var(--glass); border: 1px solid var(--border);
+  border-radius: 20px; padding: 16px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  backdrop-filter: blur(12px); gap: 10px;
+}
+.numpad-display-label { font-size: 12px; color: var(--text2); white-space: nowrap; }
+.numpad-display-value {
+  flex: 1; text-align: right;
+  font-size: 34px; font-weight: 800; color: var(--text);
+  letter-spacing: -1px; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.numpad-display-value.placeholder { color: var(--text3); }
+
+.numpad {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 8px; padding: 0 16px; margin-bottom: 10px; flex-shrink: 0;
+}
+.numpad-key {
+  background: var(--glass); border: 1px solid var(--border);
+  border-radius: 16px; padding: 0; height: 52px;
+  font-size: 22px; font-weight: 600; color: var(--text);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all 0.1s ease; backdrop-filter: blur(8px);
+  user-select: none; -webkit-user-select: none;
+}
+.numpad-key:active { transform: scale(0.91); background: var(--glass-hover); }
+.numpad-key.action { font-size: 16px; color: var(--text2); }
+.numpad-key.backspace { font-size: 20px; }
+.numpad-key.decimal  { font-size: 26px; font-weight: 800; }
+
+/* ════════════════════════════════════════
+   РЕДАКТИРОВАНИЕ ТРАНЗАКЦИИ (sheet снизу)
+════════════════════════════════════════ */
+.edit-sheet {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 201;
+  background: var(--sheet-bg);
+  border-radius: 28px 28px 0 0;
+  padding: 14px 20px calc(28px + var(--safe));
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(.4,0,.15,1);
+  backdrop-filter: blur(28px);
+  border: 1px solid var(--border);
+  max-height: 92dvh; overflow-y: auto;
+}
+.edit-sheet.open { transform: translateY(0); }
+.edit-sheet .sheet-handle { width: 38px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 18px; }
+.edit-sheet-title {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;
+}
+.edit-sheet-title h3 { font-size: 17px; font-weight: 700; }
+.edit-del-btn {
+  background: var(--red-bg); border: 1px solid rgba(255,77,106,0.2);
+  color: var(--red); border-radius: 10px; padding: 7px 14px;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+}
+
+/* Настройки / бэкап */
+.settings-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; background: var(--glass); border: 1px solid var(--border);
+  border-radius: 16px; margin-bottom: 8px; cursor: pointer;
+  backdrop-filter: blur(8px); transition: background 0.15s;
+}
+.settings-row:active { background: var(--glass-hover); }
+.settings-row-left { display: flex; align-items: center; gap: 12px; }
+.settings-row-icon { font-size: 22px; width: 36px; height: 36px; border-radius: 10px; background: var(--glass); display: flex; align-items: center; justify-content: center; }
+.settings-row-label { font-size: 15px; font-weight: 600; }
+.settings-row-desc  { font-size: 12px; color: var(--text2); margin-top: 1px; }
+.settings-row-arrow { color: var(--text2); font-size: 16px; }
+
+/* ════════════════════════════════════════
    TOAST
 ════════════════════════════════════════ */
 .toast {

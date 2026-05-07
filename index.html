@@ -10,7 +10,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <title>Финансы</title>
-  <link rel="stylesheet" href="styles.css?v=3">
+  <link rel="stylesheet" href="styles.css?v=4">
 </head>
 <body>
 <div id="app">
@@ -20,7 +20,7 @@
     <div class="header">
       <div class="header-row">
         <h1>Финансы</h1>
-        <button class="theme-btn" id="theme-btn" title="Сменить тему">🎨</button>
+        <button class="theme-btn" id="theme-btn" title="Настройки">🎨</button>
       </div>
     </div>
 
@@ -29,7 +29,7 @@
         <div class="balance-label">Баланс за месяц</div>
         <div class="month-nav">
           <button class="month-nav-btn" id="btn-prev-month">‹</button>
-          <span class="month-nav-label" id="month-label">Май 2026</span>
+          <span class="month-nav-label" id="month-label">Май 2026 г.</span>
           <button class="month-nav-btn" id="btn-next-month" style="opacity:0.3;pointer-events:none">›</button>
         </div>
       </div>
@@ -48,12 +48,8 @@
     </div>
 
     <div class="quick-btns">
-      <button class="quick-btn expense" id="btn-expense">
-        <span class="btn-icon">−</span> Расход
-      </button>
-      <button class="quick-btn income" id="btn-income">
-        <span class="btn-icon">+</span> Доход
-      </button>
+      <button class="quick-btn expense" id="btn-expense"><span class="btn-icon">−</span> Расход</button>
+      <button class="quick-btn income"  id="btn-income" ><span class="btn-icon">+</span> Доход</button>
     </div>
 
     <div class="section-title">Последние операции</div>
@@ -62,27 +58,28 @@
 
   <!-- ══ Добавление ══ -->
   <div id="screen-add" class="screen">
-    <div class="add-header"><h2>Новая запись</h2></div>
+    <div class="add-header"><h2 id="add-title">Новая запись</h2></div>
 
     <div class="type-toggle">
       <button class="type-btn active expense" data-type="expense">Расход</button>
       <button class="type-btn" data-type="income">Доход</button>
     </div>
 
-    <div class="amount-display">
-      <div class="amount-display-label">Сумма, ₽</div>
-      <input id="amount-input" class="amount-input" type="number"
-        inputmode="decimal" placeholder="0" min="0" step="any">
+    <!-- Кастомный дисплей суммы -->
+    <div class="numpad-display">
+      <div class="numpad-display-label">Сумма, ₽</div>
+      <div class="numpad-display-value placeholder" id="numpad-display">0</div>
     </div>
 
+    <!-- Быстрые чипсы -->
     <div class="quick-chips" id="quick-chips">
-      <button class="quick-chip" data-val="100">100</button>
-      <button class="quick-chip" data-val="500">500</button>
-      <button class="quick-chip" data-val="1000">1 000</button>
-      <button class="quick-chip" data-val="5000">5 000</button>
-      <button class="quick-chip" data-val="10000">10 000</button>
+      <button class="quick-chip" data-val="100">+100</button>
+      <button class="quick-chip" data-val="500">+500</button>
+      <button class="quick-chip" data-val="1000">+1 000</button>
+      <button class="quick-chip" data-val="5000">+5 000</button>
     </div>
 
+    <!-- Категории + комментарий + кнопка -->
     <div class="add-scroll">
       <div class="field-wrap">
         <div class="field-label">Категория</div>
@@ -93,6 +90,22 @@
         <input id="note-input" class="note-input" type="text" placeholder="Необязательно">
       </div>
       <button class="save-btn" id="save-btn">Сохранить</button>
+    </div>
+
+    <!-- Кастомный numpad -->
+    <div class="numpad" id="numpad">
+      <button class="numpad-key" data-key="1">1</button>
+      <button class="numpad-key" data-key="2">2</button>
+      <button class="numpad-key" data-key="3">3</button>
+      <button class="numpad-key" data-key="4">4</button>
+      <button class="numpad-key" data-key="5">5</button>
+      <button class="numpad-key" data-key="6">6</button>
+      <button class="numpad-key" data-key="7">7</button>
+      <button class="numpad-key" data-key="8">8</button>
+      <button class="numpad-key" data-key="9">9</button>
+      <button class="numpad-key decimal" data-key=".">•</button>
+      <button class="numpad-key" data-key="0">0</button>
+      <button class="numpad-key backspace action" data-key="back">⌫</button>
     </div>
   </div>
 
@@ -111,13 +124,11 @@
   <div id="screen-stats" class="screen">
     <div class="header"><h1>Статистика</h1></div>
     <div class="stats-scroll">
-
       <div class="period-toggle">
         <button class="period-btn active" data-period="month">Месяц</button>
         <button class="period-btn" data-period="week">Неделя</button>
         <button class="period-btn" data-period="all">Всё время</button>
       </div>
-
       <div class="stats-card">
         <h3>Сводка</h3>
         <div class="stat-pills">
@@ -135,17 +146,14 @@
           </div>
         </div>
       </div>
-
       <div class="stats-card">
         <h3>По дням</h3>
         <div class="chart-wrap"><canvas id="chart"></canvas></div>
       </div>
-
       <div class="stats-card">
         <h3>Расходы по категориям</h3>
         <div id="cat-stats"></div>
       </div>
-
     </div>
   </div>
 
@@ -153,53 +161,120 @@
   <nav class="nav">
     <button class="nav-btn active" data-screen="home">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-        <polyline points="9 22 9 12 15 12 15 22"/>
+        <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
       </svg>
       Главная
     </button>
     <button class="nav-btn" data-screen="add">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round">
-        <circle cx="12" cy="12" r="10"/>
-        <line x1="12" y1="8" x2="12" y2="16"/>
-        <line x1="8" y1="12" x2="16" y2="12"/>
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
       </svg>
       Добавить
     </button>
     <button class="nav-btn" data-screen="history">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round">
         <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-        <polyline points="14 2 14 8 20 8"/>
-        <line x1="16" y1="13" x2="8" y2="13"/>
-        <line x1="16" y1="17" x2="8" y2="17"/>
+        <polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
       </svg>
       История
     </button>
     <button class="nav-btn" data-screen="stats">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round">
-        <line x1="18" y1="20" x2="18" y2="10"/>
-        <line x1="12" y1="20" x2="12" y2="4"/>
-        <line x1="6" y1="20" x2="6" y2="14"/>
+        <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
       </svg>
       Статистика
     </button>
   </nav>
 
-  <!-- ══ Шторка выбора темы ══ -->
+  <!-- ══ Шторка: тема + настройки ══ -->
   <div id="sheet-overlay" class="sheet-overlay"></div>
   <div id="theme-sheet" class="theme-sheet">
     <div class="sheet-handle"></div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
       <div class="sheet-title">Оформление</div>
-      <button id="sheet-close" style="background:none;border:none;color:var(--text2);font-size:22px;cursor:pointer;line-height:1">×</button>
+      <button id="sheet-close" style="background:none;border:none;color:var(--text2);font-size:22px;cursor:pointer">×</button>
     </div>
     <div class="theme-cards" id="theme-cards"></div>
+
+    <div class="sheet-title" style="margin-top:20px;margin-bottom:12px">Данные</div>
+    <div class="settings-row" id="btn-export">
+      <div class="settings-row-left">
+        <div class="settings-row-icon">📤</div>
+        <div>
+          <div class="settings-row-label">Экспорт</div>
+          <div class="settings-row-desc">Скачать все данные в JSON</div>
+        </div>
+      </div>
+      <div class="settings-row-arrow">›</div>
+    </div>
+    <div class="settings-row" id="btn-import">
+      <div class="settings-row-left">
+        <div class="settings-row-icon">📥</div>
+        <div>
+          <div class="settings-row-label">Импорт</div>
+          <div class="settings-row-desc">Восстановить из JSON</div>
+        </div>
+      </div>
+      <div class="settings-row-arrow">›</div>
+    </div>
+    <input type="file" id="import-file" accept=".json" style="display:none">
+  </div>
+
+  <!-- ══ Шторка редактирования транзакции ══ -->
+  <div id="edit-sheet" class="edit-sheet">
+    <div class="sheet-handle"></div>
+    <div class="edit-sheet-title">
+      <h3>Редактировать</h3>
+      <button class="edit-del-btn" id="edit-del-btn">Удалить</button>
+    </div>
+
+    <div class="type-toggle" style="margin:0 0 14px">
+      <button class="type-btn active expense" data-etype="expense">Расход</button>
+      <button class="type-btn" data-etype="income">Доход</button>
+    </div>
+
+    <div class="numpad-display" style="margin:0 0 10px">
+      <div class="numpad-display-label">Сумма, ₽</div>
+      <div class="numpad-display-value" id="edit-numpad-display">0</div>
+    </div>
+
+    <div class="quick-chips" style="padding:0;margin-bottom:14px">
+      <button class="quick-chip" data-eval="100">+100</button>
+      <button class="quick-chip" data-eval="500">+500</button>
+      <button class="quick-chip" data-eval="1000">+1 000</button>
+      <button class="quick-chip" data-eval="5000">+5 000</button>
+    </div>
+
+    <div class="numpad" id="edit-numpad" style="padding:0;margin-bottom:14px">
+      <button class="numpad-key" data-ekey="1">1</button>
+      <button class="numpad-key" data-ekey="2">2</button>
+      <button class="numpad-key" data-ekey="3">3</button>
+      <button class="numpad-key" data-ekey="4">4</button>
+      <button class="numpad-key" data-ekey="5">5</button>
+      <button class="numpad-key" data-ekey="6">6</button>
+      <button class="numpad-key" data-ekey="7">7</button>
+      <button class="numpad-key" data-ekey="8">8</button>
+      <button class="numpad-key" data-ekey="9">9</button>
+      <button class="numpad-key decimal" data-ekey=".">•</button>
+      <button class="numpad-key" data-ekey="0">0</button>
+      <button class="numpad-key backspace action" data-ekey="back">⌫</button>
+    </div>
+
+    <div class="field-wrap" style="margin:0 0 12px">
+      <div class="field-label">Категория</div>
+      <div class="categories-grid" id="edit-categories-grid"></div>
+    </div>
+    <div class="field-wrap" style="margin:0 0 12px">
+      <div class="field-label">Комментарий</div>
+      <input id="edit-note-input" class="note-input" type="text" placeholder="Необязательно">
+    </div>
+    <button class="save-btn" id="edit-save-btn">Сохранить изменения</button>
   </div>
 
   <div id="toast" class="toast"></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="app.js?v=3"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>
