@@ -379,7 +379,7 @@ $('amount-input').addEventListener('keydown', e => {
 // ── Service Worker ───────────────────────────────────────────────────────────
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch(() => {});
+  navigator.serviceWorker.register('/finance-app/sw.js').catch(() => {});
 }
 
 // ── Старт ────────────────────────────────────────────────────────────────────

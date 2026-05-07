@@ -2,7 +2,7 @@
   "name": "Финансы",
   "short_name": "Финансы",
   "description": "Личный учёт доходов и расходов",
-  "start_url": "/",
+  "start_url": "/finance-app/",
   "display": "standalone",
   "background_color": "#0f0f13",
   "theme_color": "#0f0f13",
