@@ -463,7 +463,7 @@ html, body {
 
 .add-scroll {
   flex: 1; overflow-y: auto;
-  padding-bottom: calc(20px + var(--safe));
+  padding-bottom: calc(74px + var(--safe));
   -webkit-overflow-scrolling: touch;
 }
 .add-scroll::-webkit-scrollbar { display: none; }
@@ -686,8 +686,11 @@ html, body {
   font-size: 34px; font-weight: 800; color: var(--text);
   letter-spacing: -1px; min-width: 0;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  /* когда это <input> */
+  background: transparent; border: none; outline: none;
+  caret-color: var(--blue); font-family: inherit;
 }
-.numpad-display-value.placeholder { color: var(--text3); }
+.numpad-display-value::placeholder { color: var(--text3); }
 
 .numpad {
   display: grid; grid-template-columns: repeat(3, 1fr);

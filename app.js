@@ -43,9 +43,6 @@ let homeOffset  = 0;        // 0 = текущий, -1 = предыдущий, и
 let customStart = null;     // timestamp начала
 let customEnd   = null;     // timestamp конца
 
-// Numpad
-let numpadValue   = '';
-let editNumpadVal = '';
 let editingTxId   = null;
 let editType      = 'expense';
 let editCat       = 'food';
@@ -327,39 +324,17 @@ function animateNumber(el, target) {
   })();
 }
 
-// ── Кастомный Numpad ──────────────────────────────────────────────────────────
-function numpadPush(str, key) {
-  if (key==='back') return str.length>0 ? str.slice(0,-1) : '';
-  if (key==='.') return str.includes('.') ? str : (str||'0')+'.';
-  if (str==='0' && key!=='.') return key;
-  if (str.includes('.') && str.split('.')[1].length>=2) return str;
-  return (str+key).slice(0,12);
-}
-function updateDisplay(elId, str) {
-  const el = $(elId);
-  el.textContent = str || '0';
-  el.classList.toggle('placeholder', !str);
-}
-
-document.querySelectorAll('#numpad .numpad-key').forEach(key => {
-  key.addEventListener('click', () => {
-    vibrate(4);
-    numpadValue = numpadPush(numpadValue, key.dataset.key);
-    updateDisplay('numpad-display', numpadValue);
-  });
-});
-
 // ── Добавление ────────────────────────────────────────────────────────────────
 function openAdd(type = 'expense') {
   addType = type;
   selectedCat = type === 'income' ? 'salary' : 'food';
-  numpadValue = '';
   $('note-input').value = '';
+  $('amount-input').value = '';
   $('add-title').textContent = 'Новая запись';
-  updateDisplay('numpad-display', '');
   updateTypeToggle();
   renderCategories();
   showScreen('add');
+  setTimeout(() => $('amount-input').focus(), 300);
 }
 $('btn-expense').addEventListener('click', () => { vibrate(8); openAdd('expense'); });
 $('btn-income').addEventListener('click',  () => { vibrate(8); openAdd('income'); });
@@ -390,7 +365,7 @@ function renderCategories() {
 }
 
 $('save-btn').addEventListener('click', () => {
-  const amount = parseFloat(numpadValue);
+  const amount = parseFloat($('amount-input').value.replace(',', '.'));
   if (!amount || amount <= 0) { toast('Введи сумму'); return; }
   vibrate([8,40,12]);
   transactions.push({ id:Date.now().toString(), type:addType, amount, cat:selectedCat, note:$('note-input').value.trim(), date:Date.now() });
@@ -473,14 +448,13 @@ document.querySelectorAll('.period-btn').forEach(btn => btn.addEventListener('cl
 // ── Редактирование транзакции ─────────────────────────────────────────────────
 function openEditSheet(tx) {
   vibrate(8);
-  editingTxId   = tx.id;
-  editType      = tx.type;
-  editCat       = tx.cat;
-  editNumpadVal = String(tx.amount);
+  editingTxId = tx.id;
+  editType    = tx.type;
+  editCat     = tx.cat;
   document.querySelectorAll('.type-btn[data-etype]').forEach(btn => {
     btn.className = btn.dataset.etype===editType ? `type-btn active ${editType}` : 'type-btn';
   });
-  updateDisplay('edit-numpad-display', editNumpadVal);
+  $('edit-amount-input').value = String(tx.amount);
   renderEditCategories();
   $('edit-note-input').value = tx.note || '';
   openOverlay();
@@ -499,13 +473,6 @@ document.querySelectorAll('.type-btn[data-etype]').forEach(btn => {
     renderEditCategories();
   });
 });
-document.querySelectorAll('#edit-numpad .numpad-key').forEach(key => {
-  key.addEventListener('click', () => {
-    vibrate(4);
-    editNumpadVal = numpadPush(editNumpadVal, key.dataset.ekey);
-    updateDisplay('edit-numpad-display', editNumpadVal);
-  });
-});
 function renderEditCategories() {
   $('edit-categories-grid').innerHTML = CATEGORIES.map(c => `
     <button class="cat-btn ${c.id===editCat?'selected':''}" data-eid="${c.id}">
@@ -518,7 +485,7 @@ function renderEditCategories() {
 }
 $('edit-save-btn').addEventListener('click', () => {
   if (!editingTxId) return;
-  const amount = parseFloat(editNumpadVal);
+  const amount = parseFloat($('edit-amount-input').value.replace(',', '.'));
   if (!amount || amount <= 0) { toast('Введи сумму'); return; }
   vibrate([8,40,12]);
   transactions = transactions.map(t => t.id===editingTxId ? {...t, type:editType, amount, cat:editCat, note:$('edit-note-input').value.trim()} : t);

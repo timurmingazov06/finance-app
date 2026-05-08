@@ -10,7 +10,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <title>Финансы</title>
-  <link rel="stylesheet" href="styles.css?v=6">
+  <link rel="stylesheet" href="styles.css?v=7">
 </head>
 <body>
 <div id="app">
@@ -84,7 +84,7 @@
 
     <div class="numpad-display">
       <div class="numpad-display-label">Сумма, ₽</div>
-      <div class="numpad-display-value placeholder" id="numpad-display">0</div>
+      <input type="text" inputmode="decimal" id="amount-input" class="numpad-display-value" placeholder="0" autocomplete="off">
     </div>
 
     <div class="add-scroll">
@@ -97,21 +97,6 @@
         <input id="note-input" class="note-input" type="text" placeholder="Необязательно">
       </div>
       <button class="save-btn" id="save-btn">Сохранить</button>
-    </div>
-
-    <div class="numpad" id="numpad">
-      <button class="numpad-key" data-key="1">1</button>
-      <button class="numpad-key" data-key="2">2</button>
-      <button class="numpad-key" data-key="3">3</button>
-      <button class="numpad-key" data-key="4">4</button>
-      <button class="numpad-key" data-key="5">5</button>
-      <button class="numpad-key" data-key="6">6</button>
-      <button class="numpad-key" data-key="7">7</button>
-      <button class="numpad-key" data-key="8">8</button>
-      <button class="numpad-key" data-key="9">9</button>
-      <button class="numpad-key decimal" data-key=".">•</button>
-      <button class="numpad-key" data-key="0">0</button>
-      <button class="numpad-key backspace action" data-key="back">⌫</button>
     </div>
   </div>
 
@@ -170,12 +155,6 @@
         <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
       </svg>
       Главная
-    </button>
-    <button class="nav-btn" data-screen="add">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round">
-        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
-      </svg>
-      Добавить
     </button>
     <button class="nav-btn" data-screen="history">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round">
@@ -278,24 +257,9 @@
       <button class="type-btn" data-etype="income">Доход</button>
     </div>
 
-    <div class="numpad-display" style="margin:0 0 10px">
+    <div class="numpad-display" style="margin:0 0 14px">
       <div class="numpad-display-label">Сумма, ₽</div>
-      <div class="numpad-display-value" id="edit-numpad-display">0</div>
-    </div>
-
-    <div class="numpad" id="edit-numpad" style="padding:0;margin-bottom:14px">
-      <button class="numpad-key" data-ekey="1">1</button>
-      <button class="numpad-key" data-ekey="2">2</button>
-      <button class="numpad-key" data-ekey="3">3</button>
-      <button class="numpad-key" data-ekey="4">4</button>
-      <button class="numpad-key" data-ekey="5">5</button>
-      <button class="numpad-key" data-ekey="6">6</button>
-      <button class="numpad-key" data-ekey="7">7</button>
-      <button class="numpad-key" data-ekey="8">8</button>
-      <button class="numpad-key" data-ekey="9">9</button>
-      <button class="numpad-key decimal" data-ekey=".">•</button>
-      <button class="numpad-key" data-ekey="0">0</button>
-      <button class="numpad-key backspace action" data-ekey="back">⌫</button>
+      <input type="text" inputmode="decimal" id="edit-amount-input" class="numpad-display-value" autocomplete="off">
     </div>
 
     <div class="field-wrap" style="margin:0 0 12px">
@@ -313,6 +277,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="app.js?v=5"></script>
+<script src="app.js?v=6"></script>
 </body>
 </html>
