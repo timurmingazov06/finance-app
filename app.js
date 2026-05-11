@@ -46,6 +46,7 @@ let customEnd   = null;     // timestamp конца
 let editingTxId   = null;
 let editType      = 'expense';
 let editCat       = 'food';
+let selectedDate  = null; // null = сегодня
 
 // ── DOM ───────────────────────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
@@ -325,11 +326,39 @@ function animateNumber(el, target) {
 }
 
 // ── Добавление ────────────────────────────────────────────────────────────────
+function setAddDate(ts) {
+  selectedDate = ts;
+  document.querySelectorAll('.date-btn').forEach(btn => btn.classList.remove('active'));
+  const now    = new Date(); now.setHours(0,0,0,0);
+  const picked = new Date(ts); picked.setHours(0,0,0,0);
+  const diff   = Math.round((picked - now) / 86400000);
+  const match  = document.querySelector(`.date-btn[data-days="${diff}"]`);
+  if (match) {
+    match.classList.add('active');
+  } else {
+    const last = $('date-btn-last');
+    if (last._ts && last._ts === ts) {
+      last.classList.add('active');
+    } else {
+      const cal = $('date-btn-cal');
+      cal.querySelector('.date-btn-date').textContent  = dateFmt(picked);
+      cal.querySelector('.date-btn-label').textContent = new Date(ts).toLocaleDateString('ru',{month:'short'});
+      cal.classList.add('active');
+    }
+  }
+}
+
 function openAdd(type = 'expense') {
   addType = type;
+  selectedDate = null;
   selectedCat = type === 'income' ? 'salary' : 'food';
   $('note-input').value = '';
   $('amount-input').value = '';
+  $('date-picker-input').value = '';
+  $('date-btn-cal').querySelector('.date-btn-label').textContent = 'дата';
+  document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('.date-btn[data-days="0"]').classList.add('active');
+  renderDateRow();
   $('add-title').textContent = 'Новая запись';
   updateTypeToggle();
   renderCategories();
@@ -346,6 +375,57 @@ document.querySelectorAll('.type-btn[data-type]').forEach(btn => {
     updateTypeToggle();
     renderCategories();
   });
+});
+
+// ── Строка выбора даты ────────────────────────────────────────────────────────
+function dateFmt(d) {
+  return String(d.getDate()).padStart(2,'0') + '.' + String(d.getMonth()+1).padStart(2,'0');
+}
+function renderDateRow() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const yest  = new Date(today); yest.setDate(yest.getDate()-1);
+
+  $('date-btn-today').querySelector('.date-btn-date').textContent    = dateFmt(today);
+  $('date-btn-yesterday').querySelector('.date-btn-date').textContent = dateFmt(yest);
+
+  // Последняя транзакция (кроме сегодня/вчера)
+  const lastBtn = $('date-btn-last');
+  const lastTx  = [...transactions].sort((a,b) => b.date - a.date)[0];
+  if (lastTx) {
+    const ld = new Date(lastTx.date); ld.setHours(0,0,0,0);
+    const diff = Math.round((ld - today) / 86400000);
+    if (diff < -1) {
+      lastBtn.querySelector('.date-btn-date').textContent = dateFmt(ld);
+      lastBtn._ts = new Date(ld.getFullYear(), ld.getMonth(), ld.getDate(), 12).getTime();
+      lastBtn.style.display = '';
+    } else {
+      lastBtn.style.display = 'none';
+    }
+  } else {
+    lastBtn.style.display = 'none';
+  }
+}
+
+document.querySelectorAll('.date-btn[data-days]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    vibrate(4);
+    const d = new Date(); d.setHours(12,0,0,0);
+    d.setDate(d.getDate() + parseInt(btn.dataset.days));
+    setAddDate(d.getTime());
+  });
+});
+$('date-btn-last').addEventListener('click', () => {
+  vibrate(4);
+  if ($('date-btn-last')._ts) setAddDate($('date-btn-last')._ts);
+});
+$('date-btn-cal').addEventListener('click', () => {
+  const inp = $('date-picker-input');
+  if (inp.showPicker) inp.showPicker(); else inp.click();
+});
+$('date-picker-input').addEventListener('change', e => {
+  if (!e.target.value) return;
+  const [y,m,d] = e.target.value.split('-').map(Number);
+  setAddDate(new Date(y, m-1, d, 12, 0, 0).getTime());
 });
 function updateTypeToggle() {
   document.querySelectorAll('.type-btn[data-type]').forEach(btn => {
@@ -368,7 +448,8 @@ $('save-btn').addEventListener('click', () => {
   const amount = parseFloat($('amount-input').value.replace(',', '.'));
   if (!amount || amount <= 0) { toast('Введи сумму'); return; }
   vibrate([8,40,12]);
-  transactions.push({ id:Date.now().toString(), type:addType, amount, cat:selectedCat, note:$('note-input').value.trim(), date:Date.now() });
+  const txDate = selectedDate !== null ? selectedDate : (() => { const d=new Date(); d.setHours(12,0,0,0); return d.getTime(); })();
+  transactions.push({ id:Date.now().toString(), type:addType, amount, cat:selectedCat, note:$('note-input').value.trim(), date:txDate });
   saveTx(transactions);
   toast(addType==='expense' ? '✅ Расход добавлен' : '✅ Доход добавлен');
   homeOffset = 0;

@@ -10,7 +10,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <title>Финансы</title>
-  <link rel="stylesheet" href="styles.css?v=7">
+  <link rel="stylesheet" href="styles.css?v=9">
 </head>
 <body>
 <div id="app">
@@ -80,6 +80,26 @@
     <div class="type-toggle">
       <button class="type-btn active expense" data-type="expense">Расход</button>
       <button class="type-btn" data-type="income">Доход</button>
+    </div>
+
+    <div class="date-pick-row" id="date-pick-row">
+      <button class="date-btn active" data-days="0" id="date-btn-today">
+        <span class="date-btn-date"></span>
+        <span class="date-btn-label">сегодня</span>
+      </button>
+      <button class="date-btn" data-days="-1" id="date-btn-yesterday">
+        <span class="date-btn-date"></span>
+        <span class="date-btn-label">вчера</span>
+      </button>
+      <button class="date-btn" id="date-btn-last" style="display:none">
+        <span class="date-btn-date"></span>
+        <span class="date-btn-label">последнее</span>
+      </button>
+      <button class="date-btn date-btn-cal" id="date-btn-cal">
+        <span class="date-btn-date">📅</span>
+        <span class="date-btn-label">дата</span>
+      </button>
+      <input type="date" id="date-picker-input" style="display:none">
     </div>
 
     <div class="numpad-display">
@@ -277,6 +297,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="app.js?v=6"></script>
+<script src="app.js?v=7"></script>
 </body>
 </html>
