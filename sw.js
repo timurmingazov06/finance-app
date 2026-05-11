@@ -1,4 +1,4 @@
-const CACHE = 'finance-v3';
+const CACHE = 'finance-v4';
 const ASSETS = ['/finance-app/', '/finance-app/index.html', '/finance-app/styles.css', '/finance-app/app.js', '/finance-app/manifest.json'];
 
 self.addEventListener('install', e => {

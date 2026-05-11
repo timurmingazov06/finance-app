@@ -1,6 +1,7 @@
 'use strict';
 
-const DEFAULT_CATS = [
+// ── Категории расходов ────────────────────────────────────────────────────────
+const DEFAULT_EXPENSE_CATS = [
   { id:'food',      emoji:'🍕', name:'Еда' },
   { id:'transport', emoji:'🚗', name:'Транспорт' },
   { id:'shop',      emoji:'🛍️', name:'Покупки' },
@@ -13,10 +14,17 @@ const DEFAULT_CATS = [
   { id:'beauty',    emoji:'💄', name:'Красота' },
   { id:'edu',       emoji:'📚', name:'Учёба' },
   { id:'other',     emoji:'💸', name:'Другое' },
-  { id:'salary',    emoji:'💰', name:'Зарплата' },
-  { id:'gift',      emoji:'🎁', name:'Подарок' },
-  { id:'freelance', emoji:'💻', name:'Фриланс' },
-  { id:'invest',    emoji:'📈', name:'Инвестиции' },
+];
+
+// ── Категории доходов ─────────────────────────────────────────────────────────
+const DEFAULT_INCOME_CATS = [
+  { id:'salary',       emoji:'💰', name:'Зарплата' },
+  { id:'freelance',    emoji:'💻', name:'Фриланс' },
+  { id:'invest',       emoji:'📈', name:'Инвестиции' },
+  { id:'gift',         emoji:'🎁', name:'Подарок' },
+  { id:'cashback',     emoji:'💳', name:'Кэшбэк' },
+  { id:'rental',       emoji:'🏘️', name:'Аренда' },
+  { id:'income_other', emoji:'💸', name:'Другое' },
 ];
 
 // ── Storage ───────────────────────────────────────────────────────────────────
@@ -24,37 +32,63 @@ function loadTx()    { try { return JSON.parse(localStorage.getItem('finance_tx'
 function saveTx(l)   { localStorage.setItem('finance_tx', JSON.stringify(l)); }
 function loadTheme() { return localStorage.getItem('finance_theme') || 'dark'; }
 function saveTheme(t){ localStorage.setItem('finance_theme', t); }
-function loadCats()  { try { const s=localStorage.getItem('finance_cats'); return s ? JSON.parse(s) : DEFAULT_CATS; } catch { return DEFAULT_CATS; } }
-function saveCats()  { localStorage.setItem('finance_cats', JSON.stringify(CATEGORIES)); }
+
+function loadExpenseCats() {
+  try {
+    const s = localStorage.getItem('finance_cats_expense');
+    if (s) return JSON.parse(s);
+    // Миграция из старого формата
+    const old = localStorage.getItem('finance_cats');
+    if (old) {
+      const all = JSON.parse(old);
+      const incomeIds = new Set(['salary','gift','freelance','invest']);
+      return all.filter(c => !incomeIds.has(c.id));
+    }
+    return DEFAULT_EXPENSE_CATS;
+  } catch { return DEFAULT_EXPENSE_CATS; }
+}
+function loadIncomeCats() {
+  try {
+    const s = localStorage.getItem('finance_cats_income');
+    return s ? JSON.parse(s) : DEFAULT_INCOME_CATS;
+  } catch { return DEFAULT_INCOME_CATS; }
+}
+function saveExpenseCats() { localStorage.setItem('finance_cats_expense', JSON.stringify(EXPENSE_CATS)); }
+function saveIncomeCats()  { localStorage.setItem('finance_cats_income',  JSON.stringify(INCOME_CATS)); }
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let transactions  = loadTx();
-let CATEGORIES    = loadCats();
+let EXPENSE_CATS  = loadExpenseCats();
+let INCOME_CATS   = loadIncomeCats();
 let currentScreen = 'home';
 let addType       = 'expense';
 let selectedCat   = 'food';
 let statsPeriod   = 'month';
+let statsOffset   = 0;
 let historyFilter = 'all';
 let currentTheme  = loadTheme();
+let catsMgrType   = 'expense';
 
 // Период на главной
-let homePeriod  = 'day';   // 'day' | 'week' | 'month' | 'year' | 'custom'
-let homeOffset  = 0;        // 0 = текущий, -1 = предыдущий, и т.д.
-let customStart = null;     // timestamp начала
-let customEnd   = null;     // timestamp конца
+let homePeriod  = 'day';
+let homeOffset  = 0;
+let customStart = null;
+let customEnd   = null;
 
 let editingTxId   = null;
 let editType      = 'expense';
 let editCat       = 'food';
-let selectedDate  = null; // null = сегодня
+let selectedDate  = null;
 
 // ── DOM ───────────────────────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
 const screens = { home:$('screen-home'), add:$('screen-add'), history:$('screen-history'), stats:$('screen-stats') };
 
-// ── CAT_MAP ───────────────────────────────────────────────────────────────────
-function getCatMap() { return Object.fromEntries(CATEGORIES.map(c=>[c.id,c])); }
-function catFor(id)  { return getCatMap()[id] || { emoji:'💸', name:'Другое' }; }
+// ── CAT utils ─────────────────────────────────────────────────────────────────
+function getCats(type) { return type === 'income' ? INCOME_CATS : EXPENSE_CATS; }
+function catFor(id) {
+  return [...EXPENSE_CATS, ...INCOME_CATS].find(c => c.id === id) || { emoji:'💸', name:'Другое' };
+}
 
 // ── Темы ──────────────────────────────────────────────────────────────────────
 const THEMES = {
@@ -259,6 +293,29 @@ $('custom-end-date').addEventListener('change', e => {
   if (customStart != null && customEnd != null) renderHome();
 });
 
+// ── Свайп по карточке баланса (смена периода) ─────────────────────────────────
+(function() {
+  const card = document.querySelector('.balance-card');
+  let sx = 0, sy = 0;
+  card.addEventListener('touchstart', e => {
+    sx = e.touches[0].clientX;
+    sy = e.touches[0].clientY;
+  }, {passive:true});
+  card.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - sx;
+    const dy = e.changedTouches[0].clientY - sy;
+    if (Math.abs(dx) < 44 || Math.abs(dy) > Math.abs(dx) * 0.75) return;
+    if (homePeriod === 'custom') return;
+    if (dx < 0) {
+      // влево — вперёд во времени
+      if (homeOffset < 0) { homeOffset++; vibrate(6); renderHome(); }
+    } else {
+      // вправо — назад во времени
+      homeOffset--; vibrate(6); renderHome();
+    }
+  }, {passive:true});
+})();
+
 // ── Главная ───────────────────────────────────────────────────────────────────
 function renderHome() {
   const { start, end } = getPeriodDates(homePeriod, homeOffset);
@@ -351,11 +408,12 @@ function setAddDate(ts) {
 function openAdd(type = 'expense') {
   addType = type;
   selectedDate = null;
-  selectedCat = type === 'income' ? 'salary' : 'food';
+  selectedCat = getCats(type)[0]?.id || (type === 'income' ? 'salary' : 'food');
   $('note-input').value = '';
   $('amount-input').value = '';
   $('date-picker-input').value = '';
   $('date-btn-cal').querySelector('.date-btn-label').textContent = 'дата';
+  $('date-btn-cal').querySelector('.date-btn-date').textContent = '📅';
   document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('active'));
   document.querySelector('.date-btn[data-days="0"]').classList.add('active');
   renderDateRow();
@@ -371,7 +429,8 @@ $('btn-income').addEventListener('click',  () => { vibrate(8); openAdd('income')
 document.querySelectorAll('.type-btn[data-type]').forEach(btn => {
   btn.addEventListener('click', () => {
     addType = btn.dataset.type;
-    selectedCat = addType === 'income' ? 'salary' : 'food';
+    const cats = getCats(addType);
+    selectedCat = cats[0]?.id || 'food';
     updateTypeToggle();
     renderCategories();
   });
@@ -388,7 +447,6 @@ function renderDateRow() {
   $('date-btn-today').querySelector('.date-btn-date').textContent    = dateFmt(today);
   $('date-btn-yesterday').querySelector('.date-btn-date').textContent = dateFmt(yest);
 
-  // Последняя транзакция (кроме сегодня/вчера)
   const lastBtn = $('date-btn-last');
   const lastTx  = [...transactions].sort((a,b) => b.date - a.date)[0];
   if (lastTx) {
@@ -418,22 +476,20 @@ $('date-btn-last').addEventListener('click', () => {
   vibrate(4);
   if ($('date-btn-last')._ts) setAddDate($('date-btn-last')._ts);
 });
-$('date-btn-cal').addEventListener('click', () => {
-  const inp = $('date-picker-input');
-  if (inp.showPicker) inp.showPicker(); else inp.click();
-});
 $('date-picker-input').addEventListener('change', e => {
   if (!e.target.value) return;
   const [y,m,d] = e.target.value.split('-').map(Number);
   setAddDate(new Date(y, m-1, d, 12, 0, 0).getTime());
 });
+
 function updateTypeToggle() {
   document.querySelectorAll('.type-btn[data-type]').forEach(btn => {
     btn.className = btn.dataset.type===addType ? `type-btn active ${addType}` : 'type-btn';
   });
 }
 function renderCategories() {
-  $('categories-grid').innerHTML = CATEGORIES.map(c => `
+  const cats = getCats(addType);
+  $('categories-grid').innerHTML = cats.map(c => `
     <button class="cat-btn ${c.id===selectedCat?'selected':''}" data-id="${c.id}">
       <span class="cat-emoji">${c.emoji}</span>
       <span class="cat-name">${c.name}</span>
@@ -477,16 +533,48 @@ document.querySelectorAll('.filter-btn').forEach(btn => btn.addEventListener('cl
 
 // ── Статистика ────────────────────────────────────────────────────────────────
 let chart = null;
+
+function getStatsDates() {
+  const now = new Date();
+  if (statsPeriod === 'all') return null;
+  if (statsPeriod === 'week') {
+    const dow  = now.getDay();
+    const diff = dow === 0 ? -6 : 1 - dow;
+    const mon  = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diff + statsOffset * 7);
+    return { start: mon.getTime(), end: new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + 7).getTime() };
+  }
+  if (statsPeriod === 'month') {
+    const s = new Date(now.getFullYear(), now.getMonth() + statsOffset, 1);
+    return { start: s.getTime(), end: new Date(now.getFullYear(), now.getMonth() + statsOffset + 1, 1).getTime() };
+  }
+  return null;
+}
+
+function getStatsLabel() {
+  if (statsPeriod === 'all') return 'Всё время';
+  const dates = getStatsDates();
+  if (!dates) return '';
+  const s = new Date(dates.start);
+  if (statsPeriod === 'month') {
+    return s.toLocaleDateString('ru-RU', {month:'long', year:'numeric'}).replace(/^./, c=>c.toUpperCase());
+  }
+  const e = new Date(dates.end - 1);
+  return `${s.toLocaleDateString('ru-RU',{day:'numeric',month:'short'})} – ${e.toLocaleDateString('ru-RU',{day:'numeric',month:'short'})}`;
+}
+
 function renderStats() {
   const now = new Date();
-  let filtered = transactions;
-  if (statsPeriod === 'month') filtered = transactions.filter(t => { const d=new Date(t.date); return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear(); });
-  else if (statsPeriod === 'week') filtered = transactions.filter(t => t.date >= Date.now()-7*86400000);
+  const dates = getStatsDates();
+  const filtered = dates
+    ? transactions.filter(t => t.date >= dates.start && t.date < dates.end)
+    : transactions;
+
   const ti = filtered.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
   const te = filtered.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
   $('stat-income').textContent  = fmt(ti);
   $('stat-expense').textContent = fmt(te);
   $('stat-balance').textContent = fmt(ti-te);
+
   const byCat = {};
   filtered.filter(t=>t.type==='expense').forEach(t => { byCat[t.cat] = (byCat[t.cat]||0) + t.amount; });
   const sorted = Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
@@ -497,15 +585,58 @@ function renderStats() {
         const c = catFor(id);
         return `<div class="cat-stat-item"><span class="cat-stat-emoji">${c.emoji}</span><div class="cat-stat-info"><div class="cat-stat-name">${c.name}</div><div class="cat-stat-bar-wrap"><div class="cat-stat-bar" style="width:${Math.round(amt/maxAmt*100)}%"></div></div></div><div class="cat-stat-amount">−${fmt(amt)}</div></div>`;
       }).join('');
-  const days = statsPeriod==='week' ? 7 : 30;
-  const labels=[],incomes=[],expenses=[];
-  for (let i=days-1; i>=0; i--) {
-    const d = new Date(); d.setDate(d.getDate()-i);
-    labels.push(`${d.getDate()}/${d.getMonth()+1}`);
-    const dayTx = filtered.filter(t=>{ const td=new Date(t.date); return td.getDate()===d.getDate() && td.getMonth()===d.getMonth(); });
-    incomes.push(dayTx.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0));
-    expenses.push(dayTx.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0));
+
+  // Навигация по периоду
+  const statsNav = $('stats-period-nav');
+  if (statsNav) statsNav.style.display = statsPeriod === 'all' ? 'none' : 'flex';
+  const lbl = $('stats-period-label');
+  if (lbl) lbl.textContent = getStatsLabel();
+  const nextBtn = $('stats-next');
+  if (nextBtn) {
+    const canFwd = statsOffset < 0;
+    nextBtn.style.opacity      = canFwd ? '1' : '0.3';
+    nextBtn.style.pointerEvents = canFwd ? 'auto' : 'none';
   }
+
+  // Данные графика
+  let labels=[], incomes=[], expenses=[];
+  if (statsPeriod === 'week' && dates) {
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(dates.start + i * 86400000);
+      labels.push(`${d.getDate()}/${d.getMonth()+1}`);
+      const dayTx = filtered.filter(t => {
+        const td = new Date(t.date);
+        return td.getFullYear()===d.getFullYear() && td.getMonth()===d.getMonth() && td.getDate()===d.getDate();
+      });
+      incomes.push(dayTx.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0));
+      expenses.push(dayTx.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0));
+    }
+  } else if (statsPeriod === 'month' && dates) {
+    const s = new Date(dates.start);
+    const daysInMonth = new Date(s.getFullYear(), s.getMonth()+1, 0).getDate();
+    for (let i = 1; i <= daysInMonth; i++) {
+      labels.push(String(i));
+      const dayTx = filtered.filter(t => {
+        const td = new Date(t.date);
+        return td.getFullYear()===s.getFullYear() && td.getMonth()===s.getMonth() && td.getDate()===i;
+      });
+      incomes.push(dayTx.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0));
+      expenses.push(dayTx.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0));
+    }
+  } else {
+    // Всё время: последние 12 месяцев
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      labels.push(d.toLocaleDateString('ru-RU', {month:'short'}));
+      const monthTx = transactions.filter(t => {
+        const td = new Date(t.date);
+        return td.getMonth()===d.getMonth() && td.getFullYear()===d.getFullYear();
+      });
+      incomes.push(monthTx.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0));
+      expenses.push(monthTx.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0));
+    }
+  }
+
   if (chart) chart.destroy();
   chart = new Chart($('chart').getContext('2d'), {
     type: 'bar',
@@ -520,11 +651,22 @@ function renderStats() {
     },
   });
 }
+
 document.querySelectorAll('.period-btn').forEach(btn => btn.addEventListener('click', () => {
   statsPeriod = btn.dataset.period;
+  statsOffset = 0;
   document.querySelectorAll('.period-btn').forEach(b => b.classList.toggle('active', b===btn));
   renderStats();
 }));
+
+$('stats-prev').addEventListener('click', () => {
+  if (statsPeriod === 'all') return;
+  statsOffset--; vibrate(6); renderStats();
+});
+$('stats-next').addEventListener('click', () => {
+  if (statsPeriod === 'all' || statsOffset >= 0) return;
+  statsOffset++; vibrate(6); renderStats();
+});
 
 // ── Редактирование транзакции ─────────────────────────────────────────────────
 function openEditSheet(tx) {
@@ -550,12 +692,19 @@ function closeEditSheet() {
 document.querySelectorAll('.type-btn[data-etype]').forEach(btn => {
   btn.addEventListener('click', () => {
     editType = btn.dataset.etype;
-    document.querySelectorAll('.type-btn[data-etype]').forEach(b => { b.className = b.dataset.etype===editType ? `type-btn active ${editType}` : 'type-btn'; });
+    const cats = getCats(editType);
+    if (!cats.find(c => c.id === editCat)) editCat = cats[0]?.id || '';
+    document.querySelectorAll('.type-btn[data-etype]').forEach(b => {
+      b.className = b.dataset.etype===editType ? `type-btn active ${editType}` : 'type-btn';
+    });
     renderEditCategories();
   });
 });
+
 function renderEditCategories() {
-  $('edit-categories-grid').innerHTML = CATEGORIES.map(c => `
+  const cats = getCats(editType);
+  if (!cats.find(c => c.id === editCat)) editCat = cats[0]?.id || '';
+  $('edit-categories-grid').innerHTML = cats.map(c => `
     <button class="cat-btn ${c.id===editCat?'selected':''}" data-eid="${c.id}">
       <span class="cat-emoji">${c.emoji}</span><span class="cat-name">${c.name}</span>
     </button>
@@ -564,6 +713,7 @@ function renderEditCategories() {
     btn.addEventListener('click', () => { vibrate(4); editCat = btn.dataset.eid; renderEditCategories(); });
   });
 }
+
 $('edit-save-btn').addEventListener('click', () => {
   if (!editingTxId) return;
   const amount = parseFloat($('edit-amount-input').value.replace(',', '.'));
@@ -641,8 +791,11 @@ function txHtml(tx) {
       <div class="tx-item-inner">
         <div class="tx-icon" style="background:${bg}">${c.emoji}</div>
         <div class="tx-info">
-          <div class="tx-category">${c.name}${noteText ? ` · ${noteText}` : ''}</div>
-          <div class="tx-meta"><span class="tx-date">${fmtTime(tx.date)}</span></div>
+          <div class="tx-category">${c.name}</div>
+          <div class="tx-meta">
+            ${noteText ? `<span class="tx-note">${noteText}</span>` : ''}
+            <span class="tx-date">${fmtTime(tx.date)}</span>
+          </div>
         </div>
         <div class="tx-amount ${tx.type}">${sign}${fmt(tx.amount)}</div>
       </div>
@@ -671,10 +824,12 @@ function toast(msg) {
 
 // ── Управление категориями ────────────────────────────────────────────────────
 $('btn-manage-cats').addEventListener('click', () => {
+  catsMgrType = 'expense';
   renderCatsList();
   catsSheet.classList.add('open');
 });
 $('cats-close').addEventListener('click', () => { catsSheet.classList.remove('open'); });
+
 $('cats-add-btn').addEventListener('click', () => {
   $('newcat-emoji').value = '';
   $('newcat-name').value  = '';
@@ -685,8 +840,14 @@ $('newcat-save-btn').addEventListener('click', () => {
   const emoji = $('newcat-emoji').value.trim() || '📌';
   const name  = $('newcat-name').value.trim();
   if (!name) { toast('Введи название'); return; }
-  CATEGORIES.push({ id: 'custom_' + Date.now(), emoji, name });
-  saveCats();
+  const newCat = { id: 'custom_' + Date.now(), emoji, name };
+  if (catsMgrType === 'expense') {
+    EXPENSE_CATS.push(newCat);
+    saveExpenseCats();
+  } else {
+    INCOME_CATS.push(newCat);
+    saveIncomeCats();
+  }
   newcatSheet.classList.remove('open');
   renderCatsList();
   renderCategories();
@@ -694,18 +855,31 @@ $('newcat-save-btn').addEventListener('click', () => {
 });
 
 function renderCatsList() {
-  $('cats-list').innerHTML = CATEGORIES.map(c => `
+  const cats = catsMgrType === 'expense' ? EXPENSE_CATS : INCOME_CATS;
+  const toggleHtml = `
+    <div class="type-toggle" style="margin:0 0 14px">
+      <button class="type-btn ${catsMgrType==='expense'?'active expense':''}" id="cats-type-expense">Расходы</button>
+      <button class="type-btn ${catsMgrType==='income'?'active income':''}" id="cats-type-income">Доходы</button>
+    </div>`;
+  $('cats-list').innerHTML = toggleHtml + cats.map(c => `
     <div class="cat-manage-item">
       <span class="cat-manage-emoji">${c.emoji}</span>
       <span class="cat-manage-name">${c.name}</span>
       <button class="cat-delete-btn" data-catid="${c.id}">×</button>
     </div>
   `).join('');
+  $('cats-type-expense').addEventListener('click', () => { catsMgrType = 'expense'; renderCatsList(); });
+  $('cats-type-income').addEventListener('click',  () => { catsMgrType = 'income';  renderCatsList(); });
   $('cats-list').querySelectorAll('.cat-delete-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const id = btn.dataset.catid;
-      CATEGORIES = CATEGORIES.filter(c => c.id !== id);
-      saveCats();
+      if (catsMgrType === 'expense') {
+        EXPENSE_CATS = EXPENSE_CATS.filter(c => c.id !== id);
+        saveExpenseCats();
+      } else {
+        INCOME_CATS = INCOME_CATS.filter(c => c.id !== id);
+        saveIncomeCats();
+      }
       renderCatsList();
       renderCategories();
       toast('Категория удалена');
@@ -717,7 +891,7 @@ function renderCatsList() {
 function handleDeepLink() {
   const action = new URLSearchParams(location.search).get('action');
   if (action === 'income') openAdd('income');
-  else openAdd('expense'); // По умолчанию — сразу добавить расход
+  else openAdd('expense');
 }
 
 // ── Service Worker ────────────────────────────────────────────────────────────
